@@ -126,9 +126,9 @@ po8e: proto/po8e.pb.o src/po8e.o ../common_host/util.o ../common_host/lconf.o sr
 	$(CPP) -o $@ $(LDFLAGS) $^
 
 clean:
-	rm -rf gtkclient timesync icms2mat mmap_test po8e \
+	rm -rf spk po8e \
 	noop notch bp lfp bbview af af2 subtr h5evsave h5bbsave latency_test \
-	proto/*.pb.cc proto/*.pb.h proto/*.o src/*.o ../common_host/*.o
+	proto/*.pb.cc proto/*.pb.h proto/*.o src/*.o lib/*.o
 
 ifeq ($(shell lsb_release -sc), stretch)
 # as of April 2016.
@@ -173,7 +173,7 @@ deps:
 	@echo "also please install libarmadillo >= 6.7"
 
 check:
-	cppcheck -Iinclude -I/usr/local/include -I../common_host --enable=all \
+	cppcheck -Iinclude -I/usr/local/include -I../lib --enable=all \
 		-q src/*.cpp
 
 pretty:
@@ -189,7 +189,7 @@ pretty:
 
 install:
 	install -d $(TARGET)
-	install gtkclient -t $(TARGET)
+	install spk -t $(TARGET)
 	install po8e -t $(TARGET)
 	install bp -t $(TARGET)
 	install lfp -t $(TARGET)

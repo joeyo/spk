@@ -1,48 +1,48 @@
 include_rules
 
 LDFLAGS += `pkg-config --libs libzmq`
-: src/noop.o ../common_host/util.o |> !ld |> noop
-: src/latency_test.o ../common_host/util.o |> !ld |> latency_test
+: src/noop.o lib/util.o |> !ld |> noop
+: src/latency_test.o lib/util.o |> !ld |> latency_test
 
 LDFLAGS += `pkg-config --libs luajit libxdg-basedir`
-: src/bp.o ../common_host/util.o ../common_host/lconf.o src/filter.o |> !ld |> bp
-: src/lfp.o ../common_host/util.o ../common_host/lconf.o src/filter.o |> !ld |> lfp
-: src/notch.o ../common_host/util.o ../common_host/lconf.o src/filter.o |> !ld |> notch
+: src/bp.o lib/util.o lib/lconf.o src/filter.o |> !ld |> bp
+: src/lfp.o lib/util.o lib/lconf.o src/filter.o |> !ld |> lfp
+: src/notch.o lib/util.o lib/lconf.o src/filter.o |> !ld |> notch
 
 LDFLAGS += `pkg-config --libs comedilib`
 
 : src/pulser.o src/pulse_queue.o \
-../common_host/random.o \
-../common_host/util.o |> !ld |> pulser
+lib/random.o \
+lib/util.o |> !ld |> pulser
 
 LDFLAGS += `pkg-config --libs hdf5`
 LDFLAGS += -larmadillo
 
-: src/af.o ../common_host/util.o ../common_host/lconf.o src/artifact_filter.o |> !ld |> af
-: src/af2.o ../common_host/util.o ../common_host/lconf.o src/artifact_filter.o |> !ld |> af2
-: src/subtr.o ../common_host/util.o ../common_host/lconf.o src/artifact_subtract.o |> !ld |> subtr
+: src/af.o lib/util.o lib/lconf.o src/artifact_filter.o |> !ld |> af
+: src/af2.o lib/util.o lib/lconf.o src/artifact_filter.o |> !ld |> af2
+: src/subtr.o lib/util.o lib/lconf.o src/artifact_subtract.o |> !ld |> subtr
 
 LDFLAGS += `pkg-config --libs uuid luajit protobuf`
 LDFLAGS += -lPO8eStreaming
 
 : src/po8e.o \
-../common_host/util.o \
-../common_host/gettime.o \
+lib/util.o \
+lib/gettime.o \
+lib/lconf.o \
 proto/po8e.pb.o \
-../common_host/lconf.o \
 src/po8e_conf.o |> !ld |> po8e
 
 : src/h5bbsave.o \
-../common_host/util.o \
-../common_host/lconf.o \
-../common_host/gettime.o \
+lib/util.o \
+lib/lconf.o \
+lib/gettime.o \
 src/h5writer.o \
 src/h5analogwriter.o |> !ld |> h5bbsave
 
 : src/h5evsave.o \
-../common_host/util.o \
-../common_host/lconf.o \
-../common_host/gettime.o \
+lib/util.o \
+lib/lconf.o \
+lib/gettime.o \
 src/h5writer.o \
 src/h5eventwriter.o |> !ld |> h5evsave
 
@@ -50,10 +50,10 @@ PKG_LIBS  = gtk+-2.0 gtkglext-1.0 gl glu
 LDFLAGS += -lCg -lCgGL
 LDFLAGS += `pkg-config --libs $(PKG_LIBS)`
 
- :src/bbview.o \
-../common_host/util.o \
-../common_host/lconf.o \
-../common_host/glInfo.o \
+: src/bbview.o \
+lib/util.o \
+lib/lconf.o \
+lib/glInfo.o \
 src/vbo_timeseries.o \
  |> !ld |> bbview
 
@@ -61,21 +61,19 @@ PKG_LIBS  = blas-openblas matio
 LDFLAGS += -ljack
 LDFLAGS += `pkg-config --libs $(PKG_LIBS)`
 
-: src/mmap_test.o |> !ld |> mmap_test
-
-: src/gtkclient.o \
-../common_host/util.o \
-../common_host/lconf.o \
-../common_host/gettime.o \
-../common_host/matStor.o \
-../common_host/glInfo.o \
-../common_host/random.o \
-../common_host/jacksnd.o \
+: src/spk.o \
+lib/util.o \
+lib/lconf.o \
+lib/gettime.o \
+lib/matStor.o \
+lib/glInfo.o \
+lib/random.o \
+lib/jacksnd.o \
 src/vbo_raster.o \
 src/vbo_timeseries.o \
 src/h5writer.o \
 src/h5spikewriter.o \
 src/spikebuffer.o \
- |> !ld |> gtkclient
+ |> !ld |> spk
 
 

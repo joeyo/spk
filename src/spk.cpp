@@ -8,8 +8,8 @@
 #include <GL/gl.h>		// Header File For The OpenGL32 Library
 #include <GL/glu.h>		// Header File For The GLu32 Library
 #include <GL/glx.h>		// Header file for the glx libraries.
-#include "../common_host/glext.h"
-#include "../common_host/glInfo.h"
+#include "glext.h"
+#include "glInfo.h"
 
 #include <Cg/cg.h>		/* included in Cg toolkit for nvidia */
 #include <Cg/cgGL.h>
@@ -60,7 +60,7 @@
 #include "vbo_raster.h"
 #include "vbo_timeseries.h"
 #include "firingrate.h"
-#include "gtkclient.h"
+#include "spk.h"
 #include "mmaphelp.h"
 #include "fifohelp.h"
 #include "channel.h"
@@ -1223,6 +1223,8 @@ void mmap_fun()
 	volatile u16 *bin = (u16 *)mmh->m_addr;
 	mmh->prinfo();
 
+	// XXX rename these / make them part of a config file
+
 	auto pipe_out = new fifoHelp("/tmp/gtkclient_out.fifo"); // xxx conf file
 	pipe_out->prinfo();
 
@@ -1673,7 +1675,7 @@ int main(int argc, char **argv)
 
 	(void) signal(SIGINT, destroy);
 
-	lockfile lf("/tmp/gtkclient.lock");
+	lockfile lf("/tmp/spk.lock");
 	if (lf.lock()) {
 		error("executable already running");
 		return 1;
@@ -1683,7 +1685,7 @@ int main(int argc, char **argv)
 
 	g_tsc = new TimeSyncClient(); //tells us the ticks when things happen.
 
-	string titlestr = "gtkclient (TDT) v2.30";
+	string titlestr = "spk v2.50";
 
 #ifdef DEBUG
 	feenableexcept(FE_DIVBYZERO|FE_INVALID|FE_OVERFLOW);  // Enable (some) floating point exceptions
@@ -2373,7 +2375,7 @@ int main(int argc, char **argv)
 	//jack.
 #ifdef JACK
 	warn("starting jack");
-	jackInit("gtkclient", JACKPROCESS_RESAMPLE);
+	jackInit("spk", JACKPROCESS_RESAMPLE);
 	jackConnectFront();
 	jackSetResample(SRATE_HZ/SAMPFREQ);
 #endif

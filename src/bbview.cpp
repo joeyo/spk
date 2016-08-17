@@ -14,8 +14,8 @@
 #include <GL/gl.h>		// Header File For The OpenGL32 Library
 #include <GL/glu.h>		// Header File For The GLu32 Library
 #include <GL/glx.h>		// Header file for the glx libraries.
-#include "../common_host/glext.h"
-#include "../common_host/glInfo.h"
+#include "glext.h"
+#include "glInfo.h"
 
 #include <Cg/cg.h>		/* included in Cg toolkit for nvidia */
 #include <Cg/cgGL.h>

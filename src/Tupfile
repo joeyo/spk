@@ -1,10 +1,9 @@
 include_rules
 
-CPPFLAGS += -I../include -I../proto -I../../common_host
+CPPFLAGS += -I../include -I../proto -I../lib
 
-OBJS = timeclient.cpp \
+OBJS = \
 filter.cpp \
-mmap_test.cpp \
 spikebuffer.cpp \
 artifact_filter.cpp \
 artifact_subtract.cpp \
@@ -41,7 +40,7 @@ h5evsave.cpp
 PKG_LIBS  = gtk+-2.0 blas-openblas gtkglext-1.0 matio gl glu
 CPPFLAGS += `pkg-config --cflags $(PKG_LIBS)`
 
-OBJS = h5spikewriter.cpp bbview.cpp gtkclient.cpp
+OBJS = h5spikewriter.cpp bbview.cpp spk.cpp
 : foreach $(OBJS) |> !cpp |> %B.o
 
 : po8e_conf.cpp | ../proto/po8e.pb.h |> !cpp |> %B.o
