@@ -13,7 +13,7 @@ under the GPL v3.
 * nvidia cg
 * protobuffers
 * [tup]
-* [zeromq] (version 3)
+* [zeromq][zmq] (version 3)
 * and likely more that I am forgetting
  
 ## Building
@@ -26,4 +26,4 @@ Install with `make install`.
 [myopen]: http://github.com/tlh24/myopen/
 [arma]: http://arma.sourceforge.net/
 [tup]: http://gittup.org/tup/
-[zeromq]: http://zeromq.org/
+[zmq]: http://zeromq.org/
