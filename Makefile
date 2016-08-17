@@ -182,9 +182,9 @@ pretty:
 	-rm include/*.h.orig
 	astyle -A8 --indent=tab -H -k3 src/*.cpp
 	-rm src/*.cpp.orig
-	astyle -A8 --indent=tab -H -k3 ../common_host/*.h
+	astyle -A8 --indent=tab -H -k3 lib/*.h
 	-rm ../common_host/*.h.orig
-	astyle -A8 --indent=tab -H -k3 ../common_host/*.cpp
+	astyle -A8 --indent=tab -H -k3 lib/*.cpp
 	-rm ../common_host/*.cpp.orig
 
 install:
