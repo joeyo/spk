@@ -1,26 +1,26 @@
 include_rules
 
 LDFLAGS += `pkg-config --libs libzmq`
-: src/noop.o lib/util.o |> !ld |> noop
-: src/latency_test.o lib/util.o |> !ld |> latency_test
+: src/noop.o lib/util.o |> !ld |> bin/noop
+: src/latency_test.o lib/util.o |> !ld |> bin/latency_test
 
 LDFLAGS += `pkg-config --libs luajit libxdg-basedir`
-: src/bp.o lib/util.o lib/lconf.o src/filter.o |> !ld |> bp
-: src/lfp.o lib/util.o lib/lconf.o src/filter.o |> !ld |> lfp
-: src/notch.o lib/util.o lib/lconf.o src/filter.o |> !ld |> notch
+: src/bp.o lib/util.o lib/lconf.o src/filter.o |> !ld |> bin/bp
+: src/lfp.o lib/util.o lib/lconf.o src/filter.o |> !ld |> bin/lfp
+: src/notch.o lib/util.o lib/lconf.o src/filter.o |> !ld |> bin/notch
 
 LDFLAGS += `pkg-config --libs comedilib`
 
 : src/pulser.o src/pulse_queue.o \
 lib/random.o \
-lib/util.o |> !ld |> pulser
+lib/util.o |> !ld |> bin/pulser
 
 LDFLAGS += `pkg-config --libs hdf5`
 LDFLAGS += -larmadillo
 
-: src/af.o lib/util.o lib/lconf.o src/artifact_filter.o |> !ld |> af
-: src/af2.o lib/util.o lib/lconf.o src/artifact_filter.o |> !ld |> af2
-: src/subtr.o lib/util.o lib/lconf.o src/artifact_subtract.o |> !ld |> subtr
+: src/af.o lib/util.o lib/lconf.o src/artifact_filter.o |> !ld |> bin/af
+: src/af2.o lib/util.o lib/lconf.o src/artifact_filter.o |> !ld |> bin/af2
+: src/subtr.o lib/util.o lib/lconf.o src/artifact_subtract.o |> !ld |> bin/subtr
 
 LDFLAGS += `pkg-config --libs uuid luajit protobuf`
 LDFLAGS += -lPO8eStreaming
@@ -30,21 +30,21 @@ lib/util.o \
 lib/gettime.o \
 lib/lconf.o \
 proto/po8e.pb.o \
-src/po8e_conf.o |> !ld |> po8e
+src/po8e_conf.o |> !ld |> bin/po8e
 
 : src/h5bbsave.o \
 lib/util.o \
 lib/lconf.o \
 lib/gettime.o \
 src/h5writer.o \
-src/h5analogwriter.o |> !ld |> h5bbsave
+src/h5analogwriter.o |> !ld |> bin/h5bbsave
 
 : src/h5evsave.o \
 lib/util.o \
 lib/lconf.o \
 lib/gettime.o \
 src/h5writer.o \
-src/h5eventwriter.o |> !ld |> h5evsave
+src/h5eventwriter.o |> !ld |> bin/h5evsave
 
 PKG_LIBS  = gtk+-2.0 gtkglext-1.0 gl glu
 LDFLAGS += -lCg -lCgGL
@@ -55,7 +55,7 @@ lib/util.o \
 lib/lconf.o \
 lib/glInfo.o \
 src/vbo_timeseries.o \
- |> !ld |> bbview
+ |> !ld |> bin/bbview
 
 PKG_LIBS  = blas-openblas matio
 LDFLAGS += -ljack
@@ -74,6 +74,6 @@ src/vbo_timeseries.o \
 src/h5writer.o \
 src/h5spikewriter.o \
 src/spikebuffer.o \
- |> !ld |> spk
+ |> !ld |> bin/spk
 
 

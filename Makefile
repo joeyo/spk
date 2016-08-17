@@ -126,9 +126,7 @@ po8e: proto/po8e.pb.o src/po8e.o ../common_host/util.o ../common_host/lconf.o sr
 	$(CPP) -o $@ $(LDFLAGS) $^
 
 clean:
-	rm -rf spk po8e \
-	noop notch bp lfp bbview af af2 subtr h5evsave h5bbsave latency_test \
-	proto/*.pb.cc proto/*.pb.h proto/*.o src/*.o lib/*.o
+	rm -rf bin/* proto/*.pb.cc proto/*.pb.h proto/*.o src/*.o lib/*.o
 
 ifeq ($(shell lsb_release -sc), stretch)
 # as of April 2016.
