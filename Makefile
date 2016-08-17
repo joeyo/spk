@@ -1,6 +1,6 @@
 # install dependencies with make deps
 
-TARGET = /usr/local/bin
+TARGET = /usr/local
 
 all:
 	tup
@@ -66,23 +66,9 @@ pretty:
 	-rm ../common_host/*.cpp.orig
 
 install:
-	install -d $(TARGET)
-	install bin/spk -t $(TARGET)
-	install bin/po8e -t $(TARGET)
-	install bin/bp -t $(TARGET)
-	install bin/lfp -t $(TARGET)
-	install bin/notch -t $(TARGET)
-	install bin/noop -t $(TARGET)
-	install bin/af -t $(TARGET)
-	install bin/af2 -t $(TARGET)
-	install bin/latency_test -t $(TARGET)
-	install bin/subtr -t $(TARGET)
-	install bin/bbview -t $(TARGET)
-	install bin/h5bbsave -t $(TARGET)
-	install bin/h5evsave -t $(TARGET)
+	install -d $(TARGET)/bin
+	install bin/* -t $(TARGET)/bin
 	install -d $(TARGET)/cg
-	install cg/fade.cg -t $(TARGET)/cg
-	install cg/fadeColor.cg -t $(TARGET)/cg
-	install cg/threshold.cg -t $(TARGET)/cg
+	install cg/* -t $(TARGET)/cg
 
 .PRECIOUS: proto/%.pb.cc proto/%.pb.h

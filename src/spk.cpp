@@ -848,11 +848,11 @@ configure1(GtkWidget *da, GdkEventConfigure *, gpointer)
 
 		string cgfile;
 
-		cgfile = d + "/cg/" + "fadeColor.cg";
+		cgfile = d + "/../cg/fadeColor.cg";
 		g_vsFadeColor = new cgVertexShader(cgfile.c_str(),"fadeColor");
 		g_vsFadeColor->addParams(5,"time","fade","col","off","ascale");
 
-		cgfile = d + "/cg/" + "threshold.cg";
+		cgfile = d + "/../cg/threshold.cg";
 		g_vsThreshold = new cgVertexShader(cgfile.c_str(),"thresholdB");
 		g_vsThreshold->addParams(3, "xzoom", "nchan", "yoffset");
 
