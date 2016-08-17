@@ -6,16 +6,16 @@ under the GPL v3.
 
 ## Dependencies
 
-* [libarmadillo][arma] ( >= 6.700)
-* gtk+
-* hdf5
-* lua (or luajit)
+* [libarmadillo][arma] (>= 6.700)
+* [gtk+ 2.x][gtk]
+* [hdf5][h5] (1.8 recommended)
+* [luajit 2.0][luajit] (or [lua 5.1][lua])
 * nvidia cg
-* protobuffers
+* [protocol buffers][protobuf] (version 2)
 * [tup]
 * [zeromq][zmq] (version 3)
-* and likely more that I am forgetting
- 
+* and likely others that I have forgotten
+
 ## Building
 
 First get the dependencies by typing `make deps`.
@@ -25,5 +25,10 @@ Install with `make install`.
 
 [myopen]: http://github.com/tlh24/myopen/
 [arma]: http://arma.sourceforge.net/
+[gtk]: http://www.gtk.org/
+[h5]: https://www.hdfgroup.org/HDF5/
+[lua]: https://www.lua.org/
+[luajit]: http://luajit.org/
+[protobuf]: https://developers.google.com/protocol-buffers/
 [tup]: http://gittup.org/tup/
 [zmq]: http://zeromq.org/
