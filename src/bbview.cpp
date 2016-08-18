@@ -293,7 +293,7 @@ configure(GtkWidget *da, GdkEventConfigure *, gpointer)
 
 		std::string cgfile;
 
-		cgfile = d + "/cg/" + "threshold.cg";
+		cgfile = d + "/../cg/" + "threshold.cg";
 		g_vsThreshold = new cgVertexShader(cgfile.c_str(),"thresholdB");
 		g_vsThreshold->addParams(3, "xzoom", "nchan", "yoffset");
 
