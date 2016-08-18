@@ -1,0 +1,2 @@
+
+: zmq.cc |> mex -O -I/usr/include -L/usr/lib %f -lzmq |> zmq.mexa64
