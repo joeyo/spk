@@ -9,18 +9,18 @@ LDFLAGS += `pkg-config --libs luajit libxdg-basedir`
 : src/lfp.o lib/util.o lib/lconf.o src/filter.o |> !ld |> bin/lfp
 : src/notch.o lib/util.o lib/lconf.o src/filter.o |> !ld |> bin/notch
 
-LDFLAGS += `pkg-config --libs comedilib`
-
-: src/pulser.o src/pulse_queue.o \
-lib/random.o \
-lib/util.o |> !ld |> bin/pulser
-
 LDFLAGS += `pkg-config --libs hdf5`
 LDFLAGS += -larmadillo
 
 : src/af.o lib/util.o lib/lconf.o src/artifact_filter.o |> !ld |> bin/af
 : src/af2.o lib/util.o lib/lconf.o src/artifact_filter.o |> !ld |> bin/af2
 : src/subtr.o lib/util.o lib/lconf.o src/artifact_subtract.o |> !ld |> bin/subtr
+
+LDFLAGS += `pkg-config --libs comedilib`
+
+: src/pulser.o src/pulse_queue.o \
+lib/random.o \
+lib/util.o |> !ld |> bin/pulser
 
 LDFLAGS += `pkg-config --libs uuid luajit protobuf`
 LDFLAGS += -lPO8eStreaming
