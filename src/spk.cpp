@@ -1685,7 +1685,10 @@ int main(int argc, char **argv)
 
 	g_tsc = new TimeSyncClient(); //tells us the ticks when things happen.
 
-	string titlestr = "spk v2.50";
+	string verstr = "v2.50";
+
+	string titlestr = "spk ";
+	titlestr += verstr;
 
 #ifdef DEBUG
 	feenableexcept(FE_DIVBYZERO|FE_INVALID|FE_OVERFLOW);  // Enable (some) floating point exceptions
@@ -2344,15 +2347,13 @@ int main(int argc, char **argv)
 	gtk_widget_set_can_focus(da1, true);
 
 	string asciiart = "\033[1m";
-	asciiart += "\n";
-	asciiart += "           _        _ \033[31m_\033[0m\033[1m\n";
-	asciiart += "       _  | |      | \033[31m(_)\033[0m\033[1m           _ \n";
-	asciiart += "  __ _| |_| | _____| |_  ___ _ __ | |_\n";
-	asciiart += " / _` | __| |/ / __| | |/ _ \\ '_ \\| __|\n";
-	asciiart += "| (_| | |_|   < (__| | |  __/ | | | |_\n";
-	asciiart += " \\__, |\\__|_|\\_\\___|_|_|\\___|_| |_|\\__|\n";
-	asciiart += " |___/      ";
-	asciiart += titlestr;
+	asciiart += "           _      \n";
+	asciiart += " ___ _ __ | | _   \n";
+	asciiart += "/ __| '_ \\| |/ / \n";
+	asciiart += "\\__ \\ |_) |   < \n";
+	asciiart += "|___/ .__/|_|\\_\\\n";
+	asciiart += "    |_| ";
+	asciiart += verstr;
 	asciiart += "\033[0m";
 	printf("%s\n\n",asciiart.c_str());
 
