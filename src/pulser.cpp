@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <comedilib.h>
-#include <zmq.hpp>
+#include <zmq.h>
 #include "util.h"
 #include "lockfile.h"
 #include "pulse_queue.h"
@@ -12,6 +12,7 @@
 // pulser - a pulse generator / scheduler
 
 bool s_interrupted = false;
+std::vector <void *> g_socks;
 
 static void s_signal_handler(int)
 {
@@ -27,6 +28,16 @@ static void s_catch_signals(void)
 	sigaction(SIGINT, &action, nullptr);
 	sigaction(SIGQUIT, &action, nullptr);
 	sigaction(SIGTERM, &action, nullptr);
+}
+
+static void die(void *ctx, int status)
+{
+	s_interrupted = true;
+	for (auto &sock : g_socks) {
+		zmq_close(sock);
+	}
+	zmq_ctx_destroy(ctx);
+	exit(status);
 }
 
 u16 bit(int n)
@@ -46,7 +57,17 @@ int main()
 {
 	s_catch_signals();
 
-	zmq::context_t zcontext(1);	// single zmq thread
+	void *zcontext = zmq_ctx_new();
+	if (zcontext == NULL) {
+		error("zmq: could not create context");
+		return 1;
+	}
+
+	// we don't need 1024 sockets
+	if (zmq_ctx_set(zcontext, ZMQ_MAX_SOCKETS, 64) != 0) {
+		error("zmq: could not set max sockets");
+		die(zcontext, 1);
+	}
 
 	lockfile lf("/tmp/pulser.lock");
 	if (lf.lock()) {
