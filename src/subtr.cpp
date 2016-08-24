@@ -145,6 +145,13 @@ int main(int argc, char *argv[])
 		zmq_msg_close(&msg);
 	}
 
+	// it's implausible that either the stim eventchan or the current eventchan
+	// would be the maxuint, so we use it as a sentinel value
+	if (g_ec_stim == UINT_MAX || g_ec_current == UINT_MAX) {
+		error("no stim or current event definied");
+		die(zcontext, 1);
+	}
+
 	ArtifactSubtract subtr(16, nnc, 200, 64, 0.99);
 
 	struct stat buf;
