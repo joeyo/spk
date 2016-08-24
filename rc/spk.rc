@@ -11,3 +11,10 @@ spk.query_socket = "ipc:///tmp/query.zmq"
 -- the broadband and events socks are used by spk
 spk.broadband_socket = "ipc:///tmp/broadband.zmq"
 spk.events_socket = "ipc:///tmp/events.zmq"
+
+pulser = {
+	socket = "ipc:///tmp/pulser.zmq",
+	num_stim_chans = 16,
+	num_simultaneous = 3,
+	pulse_dt = 0.003,
+}
