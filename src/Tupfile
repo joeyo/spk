@@ -9,8 +9,7 @@ artifact_filter.cpp \
 artifact_subtract.cpp \
 vbo_raster.cpp \
 vbo_timeseries.cpp \
-pulse_queue.cpp \
-pulser.cpp
+pulse_queue.cpp
 : foreach $(OBJS) |> !cpp |> %B.o
 
 CPPFLAGS += `pkg-config --cflags libzmq`
@@ -19,7 +18,7 @@ OBJS = noop.cpp latency_test.cpp
 : foreach $(OBJS) |> !cpp |> %B.o
 
 CPPFLAGS += `pkg-config --cflags luajit libxdg-basedir`
-OBJS = notch.cpp bp.cpp lfp.cpp
+OBJS = notch.cpp bp.cpp lfp.cpp pulser.cpp
 : foreach $(OBJS) |> !cpp |> %B.o
 
 CPPFLAGS += `pkg-config --cflags hdf5`

@@ -19,6 +19,7 @@ LDFLAGS += -larmadillo
 LDFLAGS += `pkg-config --libs comedilib`
 
 : src/pulser.o src/pulse_queue.o \
+lib/lconf.o \
 lib/random.o \
 lib/util.o |> !ld |> bin/pulser
 
