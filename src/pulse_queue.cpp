@@ -60,7 +60,6 @@ std::vector<int> PulseQueue::step()
 		if (qnew < qlast[i]) { // ie gone over 2pi boundary
 			qtmp.push(i);
 		}
-
 		qlast[i] = qnew;
 	}
 

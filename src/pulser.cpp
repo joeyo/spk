@@ -77,6 +77,10 @@ int main()
 	int num_simultaneous = 3;
 	conf.getInt("pulser.num_simultaneous", num_simultaneous);
 
+	int major, minor, patch;
+	zmq_version(&major, &minor, &patch);
+	printf("zmq: using library version %d.%d.%d\n", major, minor, patch);
+
 	void *zcontext = zmq_ctx_new();
 	if (zcontext == NULL) {
 		error("zmq: could not create context");
@@ -95,14 +99,16 @@ int main()
 		die(zcontext, 1);
 	}
 	g_socks.push_back(sock);
-
 	printf("%s\n", zs.c_str());
 	if (zmq_connect(sock, zs.c_str()) != 0) {
 		error("zmq: could not connect to socket");
 		die(zcontext, 1);
 	}
 	// subscribe to everything
-	zmq_setsockopt(sock, ZMQ_SUBSCRIBE, "", 0);
+	if (zmq_setsockopt(sock, ZMQ_SUBSCRIBE, "", 0) != 0) {
+		error("zmq: could not set socket options");
+		die(zcontext, 1);
+	}
 
 	lockfile lf("/tmp/pulser.lock");
 	if (lf.lock()) {
@@ -128,26 +134,8 @@ int main()
 	p.setNumSimultaneous(num_simultaneous);
 
 	for (int i=0; i<num_stim_chans; i++) {
-		p.setPulseRate(i, 0);
+		p.setPulseRate(i+1, 0);
 	}
-
-	/*p.setPulseRate(1,   46);
-	p.setPulseRate(2,   78);
-	p.setPulseRate(3,  155);
-	p.setPulseRate(4,  231);
-	p.setPulseRate(5,  263);
-	p.setPulseRate(6,  231);
-	p.setPulseRate(7,  155);
-	p.setPulseRate(8,   78);
-	p.setPulseRate(9,  150);
-	p.setPulseRate(10, 106);
-	p.setPulseRate(11,   10);
-	p.setPulseRate(12,   10);
-	p.setPulseRate(13,   10);
-	p.setPulseRate(14,   10);
-	p.setPulseRate(15,   10);
-	p.setPulseRate(16, 106);
-	*/
 
 	auto bit = [](int n) -> u16 {
 		return (n < 0 || n > 15) ? 0 : 1<<n;
@@ -163,7 +151,9 @@ int main()
 
 	while (!s_interrupted) {
 
-		zmq_poll(items, 1, 1); // wait 1 msec
+		if (zmq_poll(items, 1, 1) == -1) { // wait 1 msec
+			break;
+		}
 
 		if (items[0].revents & ZMQ_POLLIN) {
 			zmq_msg_t msg;
@@ -173,7 +163,7 @@ int main()
 			if (n == num_stim_chans*sizeof(i16)) {
 				i16 *x = (i16 *)zmq_msg_data(&msg);
 				for (int i=0; i<num_stim_chans; i++) {
-					p.setPulseRate(i, x[i]);
+					p.setPulseRate(i+1, x[i]);
 				}
 			} else {
 				error("packet size error");
@@ -184,18 +174,15 @@ int main()
 		std::vector<int> v = p.step();
 
 		if (!v.empty()) {
-
 			u32 bits = 0;
 			for (int i=0; i<(int)v.size(); i++) {
 				bits |= bit(v[i]);
 			}
-
 			comedi_dio_bitfield2(card, 0, 0xFFFF, &bits, 0);
 			nanosleep(&ts, NULL);
 			bits = 0;
 			comedi_dio_bitfield2(card, 0, 0xFFFF, &bits, 0);
 		}
-
 	}
 
 	comedi_close(card);
