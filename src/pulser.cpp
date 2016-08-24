@@ -149,11 +149,6 @@ int main()
 	p.setPulseRate(16, 106);
 	*/
 
-	// nb we must not assume that the string is null terminated!
-	auto cmd = [](zmq_msg_t *m, const char *c) {
-		return strncmp((char *)zmq_msg_data(m), c, zmq_msg_size(m)) == 0;
-	};
-
 	auto bit = [](int n) -> u16 {
 		return (n < 0 || n > 15) ? 0 : 1<<n;
 	};
@@ -171,25 +166,18 @@ int main()
 		zmq_poll(items, 1, 1); // wait 1 msec
 
 		if (items[0].revents & ZMQ_POLLIN) {
-			printf("hi0\n");
 			zmq_msg_t msg;
 			zmq_msg_init(&msg);
 			zmq_msg_recv(&msg, sock, 0);
-			if (cmd(&msg, "FREQVEC")) {
-				printf("hi1\n");
-				zmq_msg_close(&msg);
-				zmq_msg_init(&msg);
-				zmq_msg_recv(&msg, sock, 0);
-				size_t n = zmq_msg_size(&msg);
-				if (n != num_stim_chans*sizeof(i16)) {
-					error("FREQVEC packet size error");
+			size_t n = zmq_msg_size(&msg);
+			if (n == num_stim_chans*sizeof(i16)) {
+				i16 *x = (i16 *)zmq_msg_data(&msg);
+				for (int i=0; i<num_stim_chans;i++) {
+					p.setPulseRate(i, x[i]);
 				}
-				else {
-					i16 *x = (i16 *)zmq_msg_data(&msg);
-					for (int i=0; i<num_stim_chans;i++) {
-						p.setPulseRate(i, x[i]);
-					}
-				}
+			}
+			else {
+				error("packet size error");
 			}
 			zmq_msg_close(&msg);
 		}
@@ -216,5 +204,4 @@ int main()
 	lf.unlock();
 
 	die(zcontext, 0);
-
 }
