@@ -127,7 +127,7 @@ int main()
 	p.setPulseDT(pulse_dt);
 	p.setNumSimultaneous(num_simultaneous);
 
-	for (int i=0; i<num_stim_chans;i++) {
+	for (int i=0; i<num_stim_chans; i++) {
 		p.setPulseRate(i, 0);
 	}
 
@@ -172,11 +172,10 @@ int main()
 			size_t n = zmq_msg_size(&msg);
 			if (n == num_stim_chans*sizeof(i16)) {
 				i16 *x = (i16 *)zmq_msg_data(&msg);
-				for (int i=0; i<num_stim_chans;i++) {
+				for (int i=0; i<num_stim_chans; i++) {
 					p.setPulseRate(i, x[i]);
 				}
-			}
-			else {
+			} else {
 				error("packet size error");
 			}
 			zmq_msg_close(&msg);

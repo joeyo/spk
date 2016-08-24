@@ -61,9 +61,9 @@ pretty:
 	astyle -A8 --indent=tab -H -k3 src/*.cpp
 	-rm src/*.cpp.orig
 	astyle -A8 --indent=tab -H -k3 lib/*.h
-	-rm ../common_host/*.h.orig
+	-rm lib/*.h.orig
 	astyle -A8 --indent=tab -H -k3 lib/*.cpp
-	-rm ../common_host/*.cpp.orig
+	-rm lib/*.cpp.orig
 
 install:
 	install -d $(TARGET)/bin
