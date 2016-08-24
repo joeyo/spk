@@ -37,7 +37,7 @@ static void die(void *ctx, int status)
 	for (auto &sock : g_socks) {
 		zmq_close(sock);
 	}
-	zmq_ctx_destroy(ctx);
+	zmq_ctx_term(ctx);
 	exit(status);
 }
 
@@ -264,15 +264,13 @@ int main(int argc, char *argv[])
 	void *controller = zmq_socket(zcontext, ZMQ_PUB);
 	if (controller == NULL) {
 		error("zmq: could not create socket");
-		zmq_ctx_destroy(zcontext);
-		return 1;
+		die(zcontext, 1);
 	}
+	g_socks.push_back(controller);
 
 	if (zmq_bind(controller, "inproc://controller") != 0) {
 		error("zmq: could not bind to socket");
-		zmq_close(controller);
-		zmq_ctx_destroy(zcontext);
-		return 1;
+		die(zcontext, 1);
 	}
 
 	int hwm = 2048;

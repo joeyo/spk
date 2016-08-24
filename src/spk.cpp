@@ -269,7 +269,7 @@ static void die(int status)
 	for (auto &sock : g_socks) {
 		zmq_close(sock);
 	}
-	zmq_ctx_destroy(g_zmq_ctx);
+	zmq_ctx_term(g_zmq_ctx);
 	exit(status);
 }
 void BuildFont(void)

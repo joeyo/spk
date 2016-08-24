@@ -74,7 +74,6 @@ void po8e_thread(void *ctx, PO8e *p, int id)
 	void *socket = zmq_socket(ctx, ZMQ_PUB);
 	if (socket == NULL) {
 		error("zmq: could not create socket");
-		//zmq_ctx_destroy(zcontext);
 		return;
 	}
 
@@ -83,7 +82,6 @@ void po8e_thread(void *ctx, PO8e *p, int id)
 	if (zmq_bind(socket, ss.str().c_str()) != 0) {
 		error("zmq: could not bind to socket");
 		zmq_close(socket);
-		//zmq_ctx_destroy(zcontext);
 		return;
 	}
 
@@ -475,14 +473,14 @@ int main(int argc, char *argv[])
 	void *controller = zmq_socket(zcontext, ZMQ_PUB);
 	if (controller == NULL) {
 		error("zmq: could not create socket");
-		zmq_ctx_destroy(zcontext);
+		zmq_ctx_term(zcontext);
 		return 1;
 	}
 
 	if (zmq_bind(controller, "inproc://controller") != 0) {
 		error("zmq: could not bind to socket");
 		zmq_close(controller);
-		zmq_ctx_destroy(zcontext);
+		zmq_ctx_term(zcontext);
 		return 1;
 	}
 
@@ -490,7 +488,7 @@ int main(int argc, char *argv[])
 	if (controller == NULL) {
 		error("zmq: could not create socket");
 		zmq_close(controller);
-		zmq_ctx_destroy(zcontext);
+		zmq_ctx_term(zcontext);
 		return 1;
 	}
 
@@ -498,7 +496,7 @@ int main(int argc, char *argv[])
 		error("zmq: could not bind to socket");
 		zmq_close(query);
 		zmq_close(controller);
-		zmq_ctx_destroy(zcontext);
+		zmq_ctx_term(zcontext);
 		return 1;
 	}
 
@@ -666,7 +664,7 @@ int main(int argc, char *argv[])
 
 	zmq_close(query);
 	zmq_close(controller);
-	zmq_ctx_destroy(zcontext);
+	zmq_ctx_term(zcontext);
 
 	lf.unlock();
 }

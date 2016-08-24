@@ -42,7 +42,7 @@ static void die(void *ctx, int status)
 	for (auto &sock : g_socks) {
 		zmq_close(sock);
 	}
-	zmq_ctx_destroy(ctx);
+	zmq_ctx_term(ctx);
 	exit(status);
 }
 
