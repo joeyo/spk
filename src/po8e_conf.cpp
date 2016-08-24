@@ -67,7 +67,8 @@ size_t po8eConf::numIgnoredChannels() // helper
 }
 size_t po8eConf::readSize()
 {
-	size_t read_size = getInt("po8e.read_size");
+	size_t read_size = 16;
+	getInt("po8e.read_size", (int &)read_size);
 	if (read_size < 1) {
 		read_size = 16;	// reasonable default
 	}
