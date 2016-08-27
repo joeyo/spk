@@ -1054,8 +1054,8 @@ void sorter(int ch)
 				if (unit > 0) {
 					int uu = unit-1;
 					g_spikeraster[uu]->addEvent((float)the_time, ch); // for drawing
+					g_fr[ch*NSORT+uu]->add(the_time); // excluding unsorted
 				}
-				g_fr[ch*NUNIT+unit]->add(the_time); // including unsorted
 			}
 		}
 	}
@@ -1807,7 +1807,7 @@ int main(int argc, char **argv)
 		die(1);
 	}
 
-	for (size_t i=0; i<(nnc*NUNIT); i++) {
+	for (size_t i=0; i<(nnc*NSORT); i++) {
 		auto fr = new FiringRate();
 		fr->set_bin_params(20, 1.0); // nlags, duration (sec)
 		g_fr.push_back(fr);
@@ -1879,12 +1879,12 @@ int main(int argc, char **argv)
 		zmq_msg_recv(&msg, query_sock, 0);
 
 		if (is(&msg, "stim")) {
-			VboRaster *o = new VboRaster(16, 2*NSBUF);
+			VboRaster *o = new VboRaster(16, 5*NSBUF);
 			o->setColor(1.0, 1.0, 50.f/255.f, 0.75); // yellow
 			g_eventraster.push_back(o);
 			g_ec_stim = ch;
 		} else {
-			VboRaster *o = new VboRaster(1, 2*NSBUF);
+			VboRaster *o = new VboRaster(1, 10*NSBUF);
 			o->setColor(202.f/255.f, 178.f/255.f, 214.f/255.f, 0.95); // purple
 			g_eventraster.push_back(o);
 		}
