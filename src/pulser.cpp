@@ -183,6 +183,13 @@ int main()
 			bits = 0;
 			comedi_dio_bitfield2(card, 0, 0xFFFF, &bits, 0);
 		}
+
+		printf("F: [ ");
+		for (int i=0; i<num_stim_chans; i++) {
+			printf("%0.0f ", p.getPulseRate(i));
+		}
+		printf("]                \r");
+		fflush(stdout);
 	}
 
 	comedi_close(card);

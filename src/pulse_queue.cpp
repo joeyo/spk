@@ -92,3 +92,8 @@ long double PulseQueue::gettime()
 	ret += (long double)(pt.tv_nsec) / 1e9 ;
 	return ret;
 }
+
+float PulseQueue::getPulseRate(int ch)
+{
+	return f[ch];
+}

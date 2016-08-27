@@ -35,6 +35,8 @@ public:
 
 	std::vector<int> step();
 
+	float getPulseRate(int ch);
+
 };
 
 #endif
