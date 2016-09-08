@@ -70,7 +70,9 @@ void trainer(void *ctx, size_t batch_size, ArtifactFilterDirect &af)
 
 	while (true) {
 
-		zmq_poll(items, 2, -1); //  -1 means block
+		if (zmq_poll(items, 2, -1) == -1) { //  -1 means block
+			break;
+		}
 
 		if (items[0].revents & ZMQ_POLLIN) {
 			zmq_msg_t header;
@@ -145,7 +147,9 @@ void filter(void *ctx, std::string zout, ArtifactFilterDirect &af)
 
 	while (true) {
 
-		zmq_poll(items, 2, -1); //  -1 means block
+		if (zmq_poll(items, 2, -1) == -1) { //  -1 means block
+			break;
+		}
 
 		if (items[0].revents & ZMQ_POLLIN) {
 			zmq_msg_t header;
