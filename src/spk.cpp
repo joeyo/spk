@@ -46,7 +46,6 @@
 
 #include <boost/multi_array.hpp>
 #include <map>
-#include <string>
 #include <iostream>
 #include <iomanip>
 #include <atomic>
@@ -118,6 +117,9 @@ H5SpikeWriter	g_spikewriter;
 gboolean 		g_saveUnsorted = true;
 gboolean 		g_saveSpikeWF = true;
 
+string g_fifo_in  = "/tmp/spk_in.fifo";
+string g_fifo_out = "/tmp/spk_out.fifo";
+string g_mmap_bin = "/tmp/binned.mmap";
 
 vector <Artifact *> g_artifact;
 
@@ -1219,16 +1221,14 @@ void mmap_fun()
 	// nb we assume that the number of lags is the same for all chans & units.
 	int nlags = g_fr[0]->get_lags();
 	size_t length = (nc+1)*nlags*sizeof(u16); // nc+1 because of counter
-	auto mmh = new mmapHelp(length, "/tmp/binned.mmap"); // xxx conf file?
+	auto mmh = new mmapHelp(length, g_mmap_bin.c_str());
 	volatile u16 *bin = (u16 *)mmh->m_addr;
 	mmh->prinfo();
 
-	// XXX rename these / make them part of a config file
-
-	auto pipe_out = new fifoHelp("/tmp/gtkclient_out.fifo"); // xxx conf file
+	auto pipe_out = new fifoHelp(g_fifo_out.c_str());
 	pipe_out->prinfo();
 
-	auto pipe_in = new fifoHelp("/tmp/gtkclient_in.fifo"); // xxx conf file
+	auto pipe_in = new fifoHelp(g_fifo_in.c_str());
 	pipe_in->setR(); // so we can poll
 	pipe_in->prinfo();
 
@@ -1747,6 +1747,9 @@ int main(int argc, char **argv)
 	conf.getString("spk.events_socket", ze);
 	printf("zmq events socket: %s\n", ze.c_str());
 
+	conf.getString("spk.fifo_in", g_fifo_in);
+	conf.getString("spk.fifo_out", g_fifo_out);
+	conf.getString("spk.mmap_bin", g_mmap_bin);
 
 	g_zmq_ctx = zmq_ctx_new();
 	if (g_zmq_ctx == NULL) {
