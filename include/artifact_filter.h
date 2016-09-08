@@ -22,7 +22,7 @@ public:
 	~ArtifactFilter();
 
 	size_t order();
-	mat filter(mat X);
+	virtual mat filter(mat X);
 	void loadWeights(const char *f);
 	void saveWeights(const char *f);
 	void clearWeights();
@@ -39,6 +39,7 @@ public:
 	~ArtifactNLMS3();
 	void setMu(float _mu);
 	void train(mat X);
+	mat filter(mat X);
 };
 
 class ArtifactFilterDirect : public ArtifactFilter
@@ -53,7 +54,6 @@ public:
 	size_t numBatches();
 	void clearWeights();
 	void train(mat X);
-	mat filter(mat X);
 };
 
 

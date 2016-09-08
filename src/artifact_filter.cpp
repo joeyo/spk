@@ -25,8 +25,7 @@ size_t ArtifactFilter::order()
 // returns the predicted output matrix Xhat, (n x t)
 mat ArtifactFilter::filter(mat X)
 {
-	// Xhat = W * X;
-	return W.t() * X;
+	return W * X;
 }
 
 // load weights from a file
@@ -46,6 +45,7 @@ void ArtifactFilter::clearWeights()
 	W.fill(1.0/(double)n);	// init weights
 	W.diag().zeros();		// set diag to zero
 }
+
 
 ArtifactNLMS3::ArtifactNLMS3(int _n) : ArtifactFilter(_n)
 {
@@ -103,7 +103,11 @@ void ArtifactNLMS3::train(mat X)
 	}
 
 }
-
+// NLMS requires a transpose
+mat ArtifactNLMS3::filter(mat X)
+{
+	return W.t() * X;
+}
 
 ArtifactFilterDirect::ArtifactFilterDirect(int _n) : ArtifactFilter(_n)
 {
@@ -147,13 +151,5 @@ void ArtifactFilterDirect::train(mat X)
 		W = -L * P;
 		W.diag().zeros();
 	}
-
-}
-
-// X is the input matrix (n by t)
-// returns the predicted output matrix Xhat, (n x t)
-mat ArtifactFilterDirect::filter(mat X)
-{
-	// Xhat = W * X;
-	return W * X;
+	printf("ArtifactFilterDirect: batch %zu\n", num_batches);
 }
