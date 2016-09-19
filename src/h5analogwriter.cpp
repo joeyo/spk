@@ -423,7 +423,8 @@ bool H5AnalogWriter::setMetaData(float scale, char *name, size_t slen)
 	H5Tset_size(atype, s.size());
 	H5Tset_strpad(atype, H5T_STR_NULLTERM);
 	attr = H5Acreate_by_name(m_h5file,
-	                         "/acquisition/timeseries/broadband/sync/ticks", "neurodata_type",
+	                         "/acquisition/timeseries/broadband/sync/ticks",
+	                         "neurodata_type",
 	                         atype, ds, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	H5Awrite(attr, atype, s.c_str()); // TODO: CHECK ERROR
 	H5Aclose(attr); // TODO: check error
@@ -437,7 +438,8 @@ bool H5AnalogWriter::setMetaData(float scale, char *name, size_t slen)
 	atype = H5Tcopy(H5T_C_S1);
 	H5Tset_size(atype, slen);
 	H5Tset_strpad(atype, H5T_STR_NULLTERM);
-	attr = H5Acreate_by_name(m_h5file, "/acquisition/timeseries/broadband", "Channel Name",
+	attr = H5Acreate_by_name(m_h5file, "/acquisition/timeseries/broadband",
+							 "Channel Name",
 	                         atype, ds, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	H5Awrite(attr, atype, name); // TODO: CHECK ERROR
 	H5Aclose(attr);
