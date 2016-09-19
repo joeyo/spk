@@ -208,7 +208,7 @@ void H5Writer::setUUID(char *uuid_str)
 void H5Writer::setVersion()
 {
 	// set the NWB version
-	const char *str = "NWB-1.0.3-Beta";
+	const char *str = "NWB-1.0.5_beta";
 
 	hid_t ds = H5Screate(H5S_SCALAR);
 	hid_t dtype = H5Tcopy (H5T_C_S1);
