@@ -160,6 +160,8 @@ int main(int argc, char *argv[])
 	h5.setSessionStartTime(start_time);
 	h5.setSessionDescription("broadband data");
 	h5.setMetaData(1.0/3276700, name, max_str);
+	h5.addDeviceDescription("RZ2", "TDT RZ2 BioAmp Processor");
+	h5.addDeviceDescription("PZ2", "TDT PZ2 Preamplifier");
 
 	delete[] name;
 

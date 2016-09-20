@@ -439,7 +439,7 @@ bool H5AnalogWriter::setMetaData(float scale, char *name, size_t slen)
 	H5Tset_size(atype, slen);
 	H5Tset_strpad(atype, H5T_STR_NULLTERM);
 	attr = H5Acreate_by_name(m_h5file, "/acquisition/timeseries/broadband",
-							 "Channel Name",
+	                         "Channel Name",
 	                         atype, ds, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	H5Awrite(attr, atype, name); // TODO: CHECK ERROR
 	H5Aclose(attr);

@@ -1648,6 +1648,9 @@ static void openSaveSpikesFile(GtkWidget *, gpointer parent_window)
 		g_spikewriter.setUUID(uuid);
 		g_spikewriter.setMetaData(g_sr, name, max_str);
 		delete[] name;
+		g_spikewriter.addDeviceDescription("RZ2", "TDT RZ2 BioAmp Processor");
+		g_spikewriter.addDeviceDescription("PZ2", "TDT PZ2 Preamplifier");
+
 	}
 	gtk_widget_destroy (dialog);
 }

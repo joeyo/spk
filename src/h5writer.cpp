@@ -58,6 +58,15 @@ bool H5Writer::open(const char *fn)
 		return false;
 	}
 
+	// these groups are not required by the NWB standard
+	// but they are useful for us
+	if (!createGroup("/general/devices")) {
+		return false;
+	}
+	if (!createGroup("/general/extracellular_ephys")) {
+		return false;
+	}
+
 	hsize_t dims = 0;
 	hid_t ds = H5Screate_simple(1, &dims, NULL);
 	hid_t atype = H5Tcopy(H5T_C_S1);
@@ -263,6 +272,23 @@ void H5Writer::setSessionDescription(const char *str)
 	H5Tclose(dtype);
 	H5Sclose(ds);
 }
+void H5Writer::addDeviceDescription(const char *name, const char *desc)
+{
+	hid_t ds = H5Screate(H5S_SCALAR);
+	hid_t dtype = H5Tcopy (H5T_C_S1);
+	H5Tset_size(dtype, strlen(desc));
+	H5Tset_strpad(dtype, H5T_STR_NULLTERM);
+
+	std::string s = "/general/devices/";
+
+	hid_t dset = H5Dcreate(m_h5file, (s+name).c_str(), dtype, ds,
+	                       H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	H5Dwrite(dset, dtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, desc);
+	H5Dclose(dset);
+	H5Tclose(dtype);
+	H5Sclose(ds);
+}
+
 bool H5Writer::createGroup(const char *s)
 {
 	hid_t g = H5Gcreate(m_h5file, s, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);

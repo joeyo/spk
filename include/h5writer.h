@@ -63,6 +63,8 @@ public:
 
 	void setSessionDescription(const char *str);
 
+	void addDeviceDescription(const char *name, const char *desc);
+
 	virtual const char *name() = 0;
 protected:
 	void shuffleDataset(hid_t prop);

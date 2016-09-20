@@ -149,6 +149,8 @@ int main(int argc, char *argv[])
 	h5.setSessionStartTime(start_time);
 	h5.setSessionDescription("event data");
 	h5.setMetaData();
+	h5.addDeviceDescription("RZ2", "TDT RZ2 BioAmp Processor");
+
 
 	void *socket_in = zmq_socket(zcontext, ZMQ_SUB);
 	if (socket_in == NULL) {
