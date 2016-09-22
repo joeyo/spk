@@ -1815,7 +1815,7 @@ int main(int argc, char **argv)
 
 	for (size_t i=0; i<(nnc*NSORT); i++) {
 		auto fr = new FiringRate();
-		fr->set_bin_params(20, 1.0); // nlags, duration (sec)
+		fr->set_bin_params(100, 1.0); // nlags, duration (sec)
 		g_fr.push_back(fr);
 	}
 
