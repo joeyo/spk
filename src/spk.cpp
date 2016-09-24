@@ -1263,6 +1263,52 @@ void mmap_fun()
 	delete pipe_in;
 	delete pipe_out;
 }
+void bin2()
+{
+	// sockets are too slow -- we need to memmap a file(s).
+	/* matlab can do this -- very well, too! e.g:
+	 * m = memmapfile('/tmp/binned.mmap', 'Format', {'uint16' [194] 'x'})
+	 * A = m.Data(1).x;
+	 * */
+	auto nc = g_fr.size();
+	size_t length = (nc+1)*sizeof(u16); // nc+1 because of counter
+	auto mmh = new mmapHelp(length, g_mmap_bin.c_str());
+	volatile u16 *bin = (u16 *)mmh->m_addr;
+	mmh->prinfo();
+
+	auto pipe_out = new fifoHelp(g_fifo_out.c_str());
+	pipe_out->prinfo();
+
+	auto pipe_in = new fifoHelp(g_fifo_in.c_str());
+	pipe_in->setR(); // so we can poll
+	pipe_in->prinfo();
+
+	for (size_t i=0; i<(nc+1); i++) {
+		bin[i] = 0;
+	}
+	flush_pipe(pipe_out->m_fd);
+
+	while (!g_die) {
+		if (pipe_in->Poll(1000)) {
+			double reqTime = 0.0;
+			int r = read(pipe_in->m_fd, &reqTime, 8); // send it the time you want to sample,
+			double end = (reqTime > 0) ? reqTime : (double)gettime(); // < 0 to bin 'now'
+			if (r >= 3) {
+				for (size_t i=0; i<nc; i++) {
+					bin[i] = g_fr[i]->get_count_in_bin(end);
+				}
+				bin[nc]++; //counter.
+				usleep(100); // seems reliable with this in place.
+				write(pipe_out->m_fd, "go\n", 3);
+			} else
+				usleep(100000);
+		}
+	}
+	delete mmh;
+	delete pipe_in;
+	delete pipe_out;
+}
+
 void updateChannelUI(int k)
 {
 	//called when a channel changes -- update the UI elements accordingly.
@@ -1815,9 +1861,11 @@ int main(int argc, char **argv)
 
 	for (size_t i=0; i<(nnc*NSORT); i++) {
 		auto fr = new FiringRate();
-		fr->set_bin_params(100, 1.0); // nlags, duration (sec)
+		//fr->set_bin_params(10, 1.0); // nlags, duration (sec)
+		fr->set_bin_width(0.01); // (seconds)
 		g_fr.push_back(fr);
 	}
+	//printf("bin rate: 10 hz\n");
 
 	for (u64 ch=0; ch<nnc; ch++) {
 
@@ -2373,7 +2421,8 @@ int main(int argc, char **argv)
 
 	threads.push_back(thread(worker, zb.c_str(), ze.c_str()));
 	threads.push_back(thread(spikewrite));
-	threads.push_back(thread(mmap_fun));
+	//threads.push_back(thread(mmap_fun));
+	threads.push_back(thread(bin2));
 
 	gtk_widget_show_all(window);
 

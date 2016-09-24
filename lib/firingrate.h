@@ -21,6 +21,7 @@ private:
 	double	m_xfade;
 	double	m_a;
 	double	m_integral;
+	double m_bw; // bin width
 public:
 	FiringRate()
 	{
@@ -31,6 +32,7 @@ public:
 		m_xfade = 0.3; //fractional cross-fade between bins (trapezoidal bins).
 		for (int i=0; i<FR_LEN; i++)
 			m_ts[i] = -1e10;
+		m_bw = 0.1; // seconds
 	}
 	~FiringRate()
 	{
@@ -45,6 +47,10 @@ public:
 	{
 		m_lags = lags;
 		m_duration = duration;
+	}
+	void set_bin_width(double bw)
+	{
+		m_bw = bw;
 	}
 	int get_lags()
 	{
@@ -81,6 +87,29 @@ public:
 		//and we don't need to burn so much bandwidth sending doubles or floats.
 		return s;
 	}
+	unsigned short get_count_in_bin(double time)
+	{
+		// time is the bin time, in seconds
+		// bw is bin width, IN SECONDS
+		unsigned int w = m_w; // atomic.
+		unsigned short count = 0;
+		int i = 0;
+		while (w > 0 && i < FR_LEN) {
+			w--;
+			i++;
+			double t = time - m_ts[w & (FR_LEN-1)];
+			if (t <= 0) {
+				continue;
+			}
+			if (t > 0 && t <= m_bw) {
+				count++;
+			}
+			if (t > m_bw) {
+				break;
+			}
+		}
+		return count;
+	}
 	/** bmi3  / skunkape interface **/
 	unsigned short get_count(double starttime, double endtime)
 	{
@@ -105,6 +134,7 @@ public:
 		// (local_mr>local_mw)
 		return ((FR_LEN-local_ml ) + local_mw);
 	}
+
 	/** lagged bin interface (bmi5 & matlab) **/
 	void get_bins(double time, unsigned short *out)
 	{
