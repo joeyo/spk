@@ -16,11 +16,13 @@ spk = {
 	fifo_in = "/tmp/spk_in.fifo",
 	fifo_out = "/tmp/spk_out.fifo",
 	mmap_bin = "/tmp/binned.mmap",
+
+	bin_width = 0.01, -- seconds!
 }
 
 pulser = {
 	socket = "ipc:///tmp/pulser.zmq",
 	num_stim_chans = 16,
 	num_simultaneous = 3,
-	pulse_dt = 0.003,
+	pulse_dt = 0.003, -- seconds!
 }

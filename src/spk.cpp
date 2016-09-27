@@ -121,6 +121,8 @@ string g_fifo_in  = "/tmp/spk_in.fifo";
 string g_fifo_out = "/tmp/spk_out.fifo";
 string g_mmap_bin = "/tmp/binned.mmap";
 
+double g_bin_width = 0.01; // seconds
+
 vector <Artifact *> g_artifact;
 
 #if defined KHZ_24
@@ -1784,6 +1786,16 @@ int main(int argc, char **argv)
 		free(confpath);
 	xdgWipeHandle(&xdg);
 
+	conf.getString("spk.fifo_in", g_fifo_in);
+	printf("%s\n", g_fifo_in.c_str());
+	conf.getString("spk.fifo_out", g_fifo_out);
+	printf("%s\n", g_fifo_out.c_str());
+	conf.getString("spk.mmap_bin", g_mmap_bin);
+	printf("%s\n", g_mmap_bin.c_str());
+	conf.getDouble("spk.bin_width", g_bin_width);
+	printf("bin width: %0.2f s\n", g_bin_width);
+
+
 	std::string zq = "ipc:///tmp/query.zmq";
 	conf.getString("spk.query_socket", zq);
 	printf("zmq query socket: %s\n", zq.c_str());
@@ -1795,10 +1807,6 @@ int main(int argc, char **argv)
 	std::string ze = "ipc:///tmp/events.zmq";
 	conf.getString("spk.events_socket", ze);
 	printf("zmq events socket: %s\n", ze.c_str());
-
-	conf.getString("spk.fifo_in", g_fifo_in);
-	conf.getString("spk.fifo_out", g_fifo_out);
-	conf.getString("spk.mmap_bin", g_mmap_bin);
 
 	g_zmq_ctx = zmq_ctx_new();
 	if (g_zmq_ctx == NULL) {
@@ -1818,6 +1826,9 @@ int main(int argc, char **argv)
 		die(1);
 	}
 	g_socks.push_back(query_sock);
+
+	int linger = 100;
+	zmq_setsockopt(query_sock, ZMQ_LINGER, &linger, sizeof(linger));
 
 	if (zmq_connect(query_sock, zq.c_str()) != 0) {
 		error("zmq: could not connect to socket");
@@ -1862,10 +1873,9 @@ int main(int argc, char **argv)
 	for (size_t i=0; i<(nnc*NSORT); i++) {
 		auto fr = new FiringRate();
 		//fr->set_bin_params(10, 1.0); // nlags, duration (sec)
-		fr->set_bin_width(0.01); // (seconds)
+		fr->set_bin_width(g_bin_width); // (seconds)
 		g_fr.push_back(fr);
 	}
-	//printf("bin rate: 10 hz\n");
 
 	for (u64 ch=0; ch<nnc; ch++) {
 
