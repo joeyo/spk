@@ -59,12 +59,14 @@ void trainer(void *ctx, ArtifactNLMS3 &af)
 
 	zmq_pollitem_t items [] = {
 		{ socket, 		0, ZMQ_POLLIN, 0 },
-		{ controller, 	0, ZMQ_POLLIN, 0}
+		{ controller, 	0, ZMQ_POLLIN, 0 }
 	};
 
 	while (true) {
 
-		zmq_poll(items, 2, -1); //  -1 means block
+		if (zmq_poll(items, 2, -1) == -1) { //  -1 means block
+			break;
+		}
 
 		if (items[0].revents & ZMQ_POLLIN) {
 			zmq_msg_t header;
@@ -127,7 +129,9 @@ void filter(void *ctx, std::string zout, ArtifactNLMS3 &af)
 
 	while (true) {
 
-		zmq_poll(items, 2, -1); //  -1 means block
+		if (zmq_poll(items, 2, -1) == -1) { //  -1 means block
+			break;
+		}
 
 		if (items[0].revents & ZMQ_POLLIN) {
 			zmq_msg_t header;
@@ -228,6 +232,9 @@ int main(int argc, char *argv[])
 		die(zcontext, 1);
 	}
 	g_socks.push_back(query_sock);
+
+	int linger = 100;
+	zmq_setsockopt(query_sock, ZMQ_LINGER, &linger, sizeof(linger));
 
 	if (zmq_connect(query_sock, zq.c_str()) != 0) {
 		error("zmq: could not connect to socket");

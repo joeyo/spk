@@ -113,6 +113,10 @@ int main(int argc, char *argv[])
 	}
 	g_socks.push_back(query_sock);
 
+	int linger = 100;
+	zmq_setsockopt(query_sock, ZMQ_LINGER, &linger, sizeof(linger));
+
+
 	if (zmq_connect(query_sock, zq.c_str()) != 0) {
 		error("zmq: could not connect to socket");
 		die(zcontext, 1);
