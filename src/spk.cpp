@@ -586,7 +586,7 @@ expose1 (GtkWidget *da, GdkEventExpose *, gpointer )
 
 		int n = g_timeseries.size();
 		for (int k=0; k<n; k++) {
-			float yoffset = (float)k/n + 1.f/(2.f*n);
+			float yoffset = 1.f - (float)(k+1)/n + 1.f/(2.f*n);
 			g_timeseries[k]->draw(g_drawmode[g_drawmodep], (float)n, yoffset);
 
 			//labels.
