@@ -913,6 +913,8 @@ static gboolean rotate(gpointer user_data)
 	gdk_window_invalidate_rect(win, &allocation, FALSE);
 	gdk_window_process_updates (win, FALSE);
 
+	gtk_label_set_text(GTK_LABEL(g_infoLabel), g_tsc->getInfo().c_str());
+
 	g_spikewriter.draw();
 
 	return TRUE;
