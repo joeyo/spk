@@ -1085,15 +1085,21 @@ void worker(void *ctx, const char *zb, const char *ze)
 	zmq_connect(events_sock, ze);
 	zmq_setsockopt(events_sock, ZMQ_SUBSCRIBE, "", 0);
 
+	// for control input
+	void *controller = zmq_socket(ctx, ZMQ_SUB);
+	zmq_connect(controller, "inproc://controller");
+	zmq_setsockopt(controller, ZMQ_SUBSCRIBE, "", 0);
+
 	// init poll set
 	zmq_pollitem_t items [] = {
-		{ neural_sock, 0, ZMQ_POLLIN, 0 },
-		{ events_sock, 0, ZMQ_POLLIN, 0 }
+		{ neural_sock, 	0, ZMQ_POLLIN, 0 },
+		{ events_sock, 	0, ZMQ_POLLIN, 0 },
+		{ controller, 	0, ZMQ_POLLIN, 0 }
 	};
 
-	while (!g_die) {
+	while (true) {
 
-		if (zmq_poll(items, 2, -1) == -1) {
+		if (zmq_poll(items, 3, -1) == -1) {
 			break;
 		}
 
@@ -1193,6 +1199,10 @@ void worker(void *ctx, const char *zb, const char *ze)
 
 			zmq_msg_close(&header);
 			zmq_msg_close(&body);
+		}
+
+		if (items[2].revents & ZMQ_POLLIN) {
+			break;
 		}
 
 	}
@@ -2461,6 +2471,8 @@ int main(int argc, char **argv)
 #endif
 
 	KillFont();
+
+	zmq_send(controller, "KILL", 4, 0);
 
 	for (auto &thread : threads) {
 		thread.join();
