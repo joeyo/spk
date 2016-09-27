@@ -89,7 +89,6 @@ uuid_t	g_uuid;
 
 char	g_prefstr[256];
 
-void *g_zmq_ctx;
 std::vector <void *> g_socks;
 
 float	g_cursPos[2];
@@ -267,13 +266,13 @@ void destroy(int)
 	gtk_main_quit();	// tell gui thread to finish
 	// now the rest of cleanup happens in main
 }
-static void die(int status)
+static void die(void *ctx, int status)
 {
 	g_die = true;
 	for (auto &sock : g_socks) {
 		zmq_close(sock);
 	}
-	zmq_ctx_term(g_zmq_ctx);
+	zmq_ctx_term(ctx);
 	exit(status);
 }
 void BuildFont(void)
@@ -1073,20 +1072,18 @@ void spikewrite()
 			usleep(1e5);
 	}
 }
-void worker(const char *zb, const char *ze)
+void worker(void *ctx, const char *zb, const char *ze)
 {
 
 	// Prepare our sockets
 
-	void *neural_sock = zmq_socket(g_zmq_ctx, ZMQ_SUB);
+	void *neural_sock = zmq_socket(ctx, ZMQ_SUB);
 	zmq_connect(neural_sock, zb);
 	zmq_setsockopt(neural_sock, ZMQ_SUBSCRIBE, "", 0);
 
-	void *events_sock = zmq_socket(g_zmq_ctx, ZMQ_SUB);
+	void *events_sock = zmq_socket(ctx, ZMQ_SUB);
 	zmq_connect(events_sock, ze);
 	zmq_setsockopt(events_sock, ZMQ_SUBSCRIBE, "", 0);
-
-	//socket.connect("ipc:///tmp/af.zmq");
 
 	// init poll set
 	zmq_pollitem_t items [] = {
@@ -1808,22 +1805,34 @@ int main(int argc, char **argv)
 	conf.getString("spk.events_socket", ze);
 	printf("zmq events socket: %s\n", ze.c_str());
 
-	g_zmq_ctx = zmq_ctx_new();
-	if (g_zmq_ctx == NULL) {
+	void *zcontext = zmq_ctx_new();
+	if (zcontext == NULL) {
 		error("zmq: could not create context");
 		return 1;
 	}
 
 	// we don't need 1024 sockets
-	if (zmq_ctx_set(g_zmq_ctx, ZMQ_MAX_SOCKETS, 64) != 0) {
+	if (zmq_ctx_set(zcontext, ZMQ_MAX_SOCKETS, 64) != 0) {
 		error("zmq: could not set max sockets");
-		die(1);
+		die(zcontext, 1);
 	}
 
-	void *query_sock = zmq_socket(g_zmq_ctx, ZMQ_REQ);
+	void *controller = zmq_socket(zcontext, ZMQ_PUB);
+	if (controller == NULL) {
+		error("zmq: could not create socket");
+		die(zcontext, 1);
+	}
+	g_socks.push_back(controller);
+
+	if (zmq_bind(controller, "inproc://controller") != 0) {
+		error("zmq: could not bind to socket");
+		die(zcontext, 1);
+	}
+
+	void *query_sock = zmq_socket(zcontext, ZMQ_REQ);
 	if (query_sock == NULL) {
 		error("zmq: could not create socket");
-		die(1);
+		die(zcontext, 1);
 	}
 	g_socks.push_back(query_sock);
 
@@ -1832,32 +1841,32 @@ int main(int argc, char **argv)
 
 	if (zmq_connect(query_sock, zq.c_str()) != 0) {
 		error("zmq: could not connect to socket");
-		die(1);
+		die(zcontext, 1);
 	}
 
 	u64 nnc; // num neural channels
 	zmq_send(query_sock, "NNC", 3, 0);
 	if (zmq_recv(query_sock, &nnc, sizeof(u64), 0) == -1) {
 		error("zmq: could not recv from query sock");
-		die(1);
+		die(zcontext, 1);
 	}
 	u64 nec; // num event channels
 	zmq_send(query_sock, "NEC", 3, 0);
 	if (zmq_recv(query_sock, &nec, sizeof(u64), 0) == -1) {
 		error("zmq: could not recv from query sock");
-		die(1);
+		die(zcontext, 1);
 	}
 	u64 nac; // num analog channels
 	zmq_send(query_sock, "NAC", 3, 0);
 	if (zmq_recv(query_sock, &nac, sizeof(u64), 0) == -1) {
 		error("zmq: could not recv from query sock");
-		die(1);
+		die(zcontext, 1);
 	}
 	u64 nic; // num ignored cahnnels
 	zmq_send(query_sock, "NIC", 3, 0);
 	if (zmq_recv(query_sock, &nic, sizeof(u64), 0) == -1) {
 		error("zmq: could not recv from query sock");
-		die(1);
+		die(zcontext, 1);
 	}
 
 	printf("neural channels:\t%zu\n", 	nnc);
@@ -1867,7 +1876,7 @@ int main(int argc, char **argv)
 
 	if (nnc == 0) {
 		error("No neural channels? Aborting!");
-		die(1);
+		die(zcontext, 1);
 	}
 
 	for (size_t i=0; i<(nnc*NSORT); i++) {
@@ -2429,9 +2438,8 @@ int main(int argc, char **argv)
 
 	vector <thread> threads;
 
-	threads.push_back(thread(worker, zb.c_str(), ze.c_str()));
+	threads.push_back(thread(worker, zcontext, zb.c_str(), ze.c_str()));
 	threads.push_back(thread(spikewrite));
-	//threads.push_back(thread(mmap_fun));
 	threads.push_back(thread(bin2));
 
 	gtk_widget_show_all(window);
