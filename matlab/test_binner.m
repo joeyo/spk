@@ -9,10 +9,10 @@ sr = 100;
 tmax = 10; % seconds
 n = sr * 10;  % samples
 
-boxmap = memmapfile('/tmp/boxcar.mmap', 'Format', {'uint16' [nc+1] 'x'}); 
+boxmap = memmapfile('/tmp/boxcar.mmap', 'Format', {'uint16' [1 nc] 'x'}); 
 boxbin = boxmap.Data(1).x;
 
-gksmap = memmapfile('/tmp/gks.mmap', 'Format', {'uint16' [nc+1] 'x'}); 
+gksmap = memmapfile('/tmp/gks.mmap', 'Format', {'uint16' [1 nc] 'x'}); 
 gksbin = gksmap.Data(1).x;
 
 x = nan(n, nc);
@@ -31,8 +31,8 @@ while true
 
         t_now = tic;
         
-        xtmp = double(boxbin(1:nc)) ./ 0.2; % count in a single bin
-        ytmp = double(gksbin(1:nc)) ./ 128 * 2; % rate
+        xtmp = double(boxbin(1:nc)) ./ 0.1; % convert to rate
+        ytmp = double(gksbin(1:nc)) ./ 128; % convert to rate
         
         % full matrix of rates
         xprev      = x;
@@ -51,7 +51,6 @@ while true
         %colorbar;
         axis normal;
        %}
-        
         
         plot(x(:,1)); hold on;
         plot(y(:,1)); hold off;

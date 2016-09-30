@@ -1231,11 +1231,11 @@ void flush_pipe(int fid)
 
 void boxcar_binner()
 {
-	// m = memmapfile('/tmp/boxcar.mmap', 'Format', {'uint16' [96*4+1] 'x'})
+	// m = memmapfile('/tmp/boxcar.mmap', 'Format', {'uint16' [96*4] 'x'})
 	// A = m.Data(1).x;
 
 	auto nc = g_boxcar.size();
-	size_t length = (nc+1)*sizeof(u16); // nc+1 because of counter
+	size_t length = nc*sizeof(u16);
 	auto mmh = new mmapHelp(length, g_boxcar_mmap.c_str());
 	volatile u16 *bin = (u16 *)mmh->m_addr;
 	mmh->prinfo();
@@ -1247,7 +1247,7 @@ void boxcar_binner()
 	pipe_in->setR(); // so we can poll
 	pipe_in->prinfo();
 
-	for (size_t i=0; i<(nc+1); i++) {
+	for (size_t i=0; i<nc; i++) {
 		bin[i] = 0;
 	}
 	flush_pipe(pipe_out->m_fd);
@@ -1257,11 +1257,10 @@ void boxcar_binner()
 			double reqTime = 0.0;
 			int r = read(pipe_in->m_fd, &reqTime, 8); // send it the time you want to sample,
 			double end = (reqTime > 0) ? reqTime : (double)gettime(); // < 0 to bin 'now'
-			if (r >= 3) {
+			if (r >= 3) { // why 3 not 8?
 				for (size_t i=0; i<nc; i++) {
 					bin[i] = g_boxcar[i]->get_count_in_bin(end);
 				}
-				bin[nc]++; //counter.
 				usleep(100); // seems reliable with this in place.
 				write(pipe_out->m_fd, "go\n", 3);
 			} else
@@ -1275,11 +1274,11 @@ void boxcar_binner()
 
 void gks_binner()
 {
-	// m = memmapfile('/tmp/gks.mmap', 'Format', {'uint16' [96*4+1] 'x'})
+	// m = memmapfile('/tmp/gks.mmap', 'Format', {'uint16' [96*4] 'x'})
 	// A = m.Data(1).x;
 
 	auto nc = g_ks.size();
-	size_t length = (nc+1)*sizeof(u16); // nc+1 because of counter
+	size_t length = nc*sizeof(u16);
 	auto mmh = new mmapHelp(length, g_gks_mmap.c_str());
 	volatile u16 *bin = (u16 *)mmh->m_addr;
 	mmh->prinfo();
@@ -1291,7 +1290,7 @@ void gks_binner()
 	pipe_in->setR(); // so we can poll
 	pipe_in->prinfo();
 
-	for (size_t i=0; i<(nc+1); i++) {
+	for (size_t i=0; i<nc; i++) {
 		bin[i] = 0;
 	}
 	flush_pipe(pipe_out->m_fd);
@@ -1301,11 +1300,10 @@ void gks_binner()
 			double reqTime = 0.0;
 			int r = read(pipe_in->m_fd, &reqTime, 8); // send it the time you want to sample,
 			double end = (reqTime > 0) ? reqTime : (double)gettime(); // < 0 to bin 'now'
-			if (r >= 3) {
+			if (r >= 3) { // why 3 not 8?
 				for (size_t i=0; i<nc; i++) {
 					bin[i] = g_ks[i]->get_rate(end);
 				}
-				bin[nc]++; //counter.
 				usleep(100); // seems reliable with this in place.
 				write(pipe_out->m_fd, "go\n", 3);
 			} else
