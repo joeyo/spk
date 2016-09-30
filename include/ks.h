@@ -24,7 +24,8 @@ public:
 	{
 		//nothing allocated.
 	}
-	virtual void set_bandwidth(double _sigma) {
+	virtual void set_bandwidth(double _sigma)
+	{
 		sigma = _sigma;
 	}
 

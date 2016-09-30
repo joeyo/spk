@@ -12,12 +12,22 @@ spk = {
 	broadband_socket = "ipc:///tmp/broadband.zmq",
 	events_socket = "ipc:///tmp/events.zmq",
 
-	-- these are used by spk for binning spikes
-	fifo_in = "/tmp/spk_in.fifo",
-	fifo_out = "/tmp/spk_out.fifo",
-	mmap_bin = "/tmp/binned.mmap",
+	-- used by spk for binning spikes (boxcars)
+	boxcar = {
+		fifo_in 	= "/tmp/boxcar_in.fifo",
+		fifo_out 	= "/tmp/boxcar_out.fifo",
+		mmap 		= "/tmp/boxcar.mmap",
+		bandwidth 	= 0.01, -- seconds!
+	},
 
-	bin_width = 0.01, -- seconds!
+	-- used by spk for estimating spike rate (gaussian kernel smoother)
+	gks = {
+		fifo_in 	= "/tmp/gks_in.fifo",
+		fifo_out 	= "/tmp/gks_out.fifo",
+		mmap 		= "/tmp/gks.mmap",
+		bandwidth 	= 0.1, -- seconds!
+	},
+
 }
 
 pulser = {

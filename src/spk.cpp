@@ -59,6 +59,7 @@
 #include "vbo_raster.h"
 #include "vbo_timeseries.h"
 #include "firingrate.h"
+#include "ks.h"
 #include "spk.h"
 #include "mmaphelp.h"
 #include "fifohelp.h"
@@ -108,7 +109,8 @@ bool g_vboInit = false;
 float	g_rasterSpan = 10.f; // %seconds.
 
 vector <Channel *> g_c;
-vector <FiringRate *> g_fr;
+vector <FiringRate *> g_boxcar;
+vector <GaussianKernelSmoother *> g_ks;
 TimeSyncClient *g_tsc;
 GLuint 		g_base;            // base display list for the font set.
 
@@ -116,11 +118,15 @@ H5SpikeWriter	g_spikewriter;
 gboolean 		g_saveUnsorted = true;
 gboolean 		g_saveSpikeWF = true;
 
-string g_fifo_in  = "/tmp/spk_in.fifo";
-string g_fifo_out = "/tmp/spk_out.fifo";
-string g_mmap_bin = "/tmp/binned.mmap";
+string g_boxcar_fifo_in  = "/tmp/boxcar_in.fifo";
+string g_boxcar_fifo_out = "/tmp/boxcar_out.fifo";
+string g_boxcar_mmap = "/tmp/boxcar.mmap";
+double g_boxcar_bandwidth = 0.01; // seconds
 
-double g_bin_width = 0.01; // seconds
+string g_gks_fifo_in  = "/tmp/gks_in.fifo";
+string g_gks_fifo_out = "/tmp/gks_out.fifo";
+string g_gks_mmap = "/tmp/gks.mmap";
+double g_gks_bandwidth = 0.01; // seconds
 
 vector <Artifact *> g_artifact;
 
@@ -1059,7 +1065,8 @@ void sorter(int ch)
 				if (unit > 0) {
 					int uu = unit-1;
 					g_spikeraster[uu]->addEvent((float)the_time, ch); // for drawing
-					g_fr[ch*NSORT+uu]->add(the_time); // excluding unsorted
+					g_boxcar[ch*NSORT+uu]->add(the_time); 	// excluding unsorted
+					g_ks[ch*NSORT+uu]->add(the_time); 		// ""
 				}
 			}
 		}
@@ -1221,76 +1228,22 @@ void flush_pipe(int fid)
 	opts ^= O_NONBLOCK;
 	fcntl(fid, F_SETFL, opts);
 }
-void mmap_fun()
+
+void boxcar_binner()
 {
-	// sockets are too slow -- we need to memmap a file(s).
-	/* matlab can do this -- very well, too! e.g:
-	 * m = memmapfile('/tmp/binned.mmap', 'Format', {'uint16' [194 10] 'x'})
-	 * A = m.Data(1).x;
-	 * */
-	auto nc = g_fr.size();
-	// nb we assume that the number of lags is the same for all chans & units.
-	int nlags = g_fr[0]->get_lags();
-	size_t length = (nc+1)*nlags*sizeof(u16); // nc+1 because of counter
-	auto mmh = new mmapHelp(length, g_mmap_bin.c_str());
-	volatile u16 *bin = (u16 *)mmh->m_addr;
-	mmh->prinfo();
+	// m = memmapfile('/tmp/boxcar.mmap', 'Format', {'uint16' [96*4+1] 'x'})
+	// A = m.Data(1).x;
 
-	auto pipe_out = new fifoHelp(g_fifo_out.c_str());
-	pipe_out->prinfo();
-
-	auto pipe_in = new fifoHelp(g_fifo_in.c_str());
-	pipe_in->setR(); // so we can poll
-	pipe_in->prinfo();
-
-	int frame = 0;
-	bin[nc*nlags] = 0;
-	bin[nc*nlags+1] = 0;
-	flush_pipe(pipe_out->m_fd);
-
-	while (!g_die) {
-		//printf("%d waiting for matlab...\n", frame);
-		if (pipe_in->Poll(1000)) {
-			double reqTime = 0.0;
-			int r = read(pipe_in->m_fd, &reqTime, 8); // send it the time you want to sample,
-			double end = (reqTime > 0) ? reqTime : (double)gettime(); // < 0 to bin 'now'
-			if (r >= 3) {
-				for (size_t i=0; i<nc; i++) {
-					g_fr[i]->get_bins(end, (u16 *)&(bin[i*nlags]));
-				}
-				bin[nc*nlags]++; //counter.
-				// N.B. seems we need to touch all memory to update the first page.
-				//msync(addr, length, MS_SYNC);
-				//  if made with shm_open, msync is ok -- no writes to disk.
-				usleep(100); //seems reliable with this in place.
-				write(pipe_out->m_fd, "go\n", 3);
-				//printf("sent pipe_out 'go'\n");
-			} else
-				usleep(100000); //does not seem to limit the frame rate, just the startup sync.
-			frame++;
-		}
-	}
-	delete mmh;
-	delete pipe_in;
-	delete pipe_out;
-}
-void bin2()
-{
-	// sockets are too slow -- we need to memmap a file(s).
-	/* matlab can do this -- very well, too! e.g:
-	 * m = memmapfile('/tmp/binned.mmap', 'Format', {'uint16' [194] 'x'})
-	 * A = m.Data(1).x;
-	 * */
-	auto nc = g_fr.size();
+	auto nc = g_boxcar.size();
 	size_t length = (nc+1)*sizeof(u16); // nc+1 because of counter
-	auto mmh = new mmapHelp(length, g_mmap_bin.c_str());
+	auto mmh = new mmapHelp(length, g_boxcar_mmap.c_str());
 	volatile u16 *bin = (u16 *)mmh->m_addr;
 	mmh->prinfo();
 
-	auto pipe_out = new fifoHelp(g_fifo_out.c_str());
+	auto pipe_out = new fifoHelp(g_boxcar_fifo_out.c_str());
 	pipe_out->prinfo();
 
-	auto pipe_in = new fifoHelp(g_fifo_in.c_str());
+	auto pipe_in = new fifoHelp(g_boxcar_fifo_in.c_str());
 	pipe_in->setR(); // so we can poll
 	pipe_in->prinfo();
 
@@ -1306,7 +1259,51 @@ void bin2()
 			double end = (reqTime > 0) ? reqTime : (double)gettime(); // < 0 to bin 'now'
 			if (r >= 3) {
 				for (size_t i=0; i<nc; i++) {
-					bin[i] = g_fr[i]->get_count_in_bin(end);
+					bin[i] = g_boxcar[i]->get_count_in_bin(end);
+				}
+				bin[nc]++; //counter.
+				usleep(100); // seems reliable with this in place.
+				write(pipe_out->m_fd, "go\n", 3);
+			} else
+				usleep(100000);
+		}
+	}
+	delete mmh;
+	delete pipe_in;
+	delete pipe_out;
+}
+
+void gks_binner()
+{
+	// m = memmapfile('/tmp/gks.mmap', 'Format', {'uint16' [96*4+1] 'x'})
+	// A = m.Data(1).x;
+
+	auto nc = g_ks.size();
+	size_t length = (nc+1)*sizeof(u16); // nc+1 because of counter
+	auto mmh = new mmapHelp(length, g_gks_mmap.c_str());
+	volatile u16 *bin = (u16 *)mmh->m_addr;
+	mmh->prinfo();
+
+	auto pipe_out = new fifoHelp(g_gks_fifo_out.c_str());
+	pipe_out->prinfo();
+
+	auto pipe_in = new fifoHelp(g_gks_fifo_in.c_str());
+	pipe_in->setR(); // so we can poll
+	pipe_in->prinfo();
+
+	for (size_t i=0; i<(nc+1); i++) {
+		bin[i] = 0;
+	}
+	flush_pipe(pipe_out->m_fd);
+
+	while (!g_die) {
+		if (pipe_in->Poll(1000)) {
+			double reqTime = 0.0;
+			int r = read(pipe_in->m_fd, &reqTime, 8); // send it the time you want to sample,
+			double end = (reqTime > 0) ? reqTime : (double)gettime(); // < 0 to bin 'now'
+			if (r >= 3) {
+				for (size_t i=0; i<nc; i++) {
+					bin[i] = g_ks[i]->get_rate(end);
 				}
 				bin[nc]++; //counter.
 				usleep(100); // seems reliable with this in place.
@@ -1795,15 +1792,15 @@ int main(int argc, char **argv)
 		free(confpath);
 	xdgWipeHandle(&xdg);
 
-	conf.getString("spk.fifo_in", g_fifo_in);
-	printf("%s\n", g_fifo_in.c_str());
-	conf.getString("spk.fifo_out", g_fifo_out);
-	printf("%s\n", g_fifo_out.c_str());
-	conf.getString("spk.mmap_bin", g_mmap_bin);
-	printf("%s\n", g_mmap_bin.c_str());
-	conf.getDouble("spk.bin_width", g_bin_width);
-	printf("bin width: %0.2f s\n", g_bin_width);
+	conf.getString("spk.boxcar.fifo_in", g_boxcar_fifo_in);
+	conf.getString("spk.boxcar.fifo_out", g_boxcar_fifo_out);
+	conf.getString("spk.boxcar.mmap", g_boxcar_mmap);
+	conf.getDouble("spk.boxcar.bandwidth", g_boxcar_bandwidth);
 
+	conf.getString("spk.gks.fifo_in", g_gks_fifo_in);
+	conf.getString("spk.gks.fifo_out", g_gks_fifo_out);
+	conf.getString("spk.gks.mmap", g_gks_mmap);
+	conf.getDouble("spk.gks.bandwidth", g_gks_bandwidth);
 
 	std::string zq = "ipc:///tmp/query.zmq";
 	conf.getString("spk.query_socket", zq);
@@ -1892,10 +1889,15 @@ int main(int argc, char **argv)
 	}
 
 	for (size_t i=0; i<(nnc*NSORT); i++) {
-		auto fr = new FiringRate();
-		//fr->set_bin_params(10, 1.0); // nlags, duration (sec)
-		fr->set_bin_width(g_bin_width); // (seconds)
-		g_fr.push_back(fr);
+		// boxcar binner
+		auto box = new FiringRate();
+		box->set_bin_width(g_boxcar_bandwidth); // (seconds)
+		g_boxcar.push_back(box);
+
+		// gaussian kernel smoother
+		auto ks = new GaussianKernelSmoother();
+		ks->set_bandwidth(g_gks_bandwidth); // (seconds)
+		g_ks.push_back(ks);
 	}
 
 	for (u64 ch=0; ch<nnc; ch++) {
@@ -2452,7 +2454,8 @@ int main(int argc, char **argv)
 
 	threads.push_back(thread(worker, zcontext, zb.c_str(), ze.c_str()));
 	threads.push_back(thread(spikewrite));
-	threads.push_back(thread(bin2));
+	threads.push_back(thread(boxcar_binner));
+	threads.push_back(thread(gks_binner));
 
 	gtk_widget_show_all(window);
 
@@ -2494,7 +2497,9 @@ int main(int argc, char **argv)
 		delete o;
 	for (auto &o : g_artifact)
 		delete o;
-	for (auto &o : g_fr)
+	for (auto &o : g_boxcar)
+		delete o;
+	for (auto &o : g_ks)
 		delete o;
 
 	delete g_tsc;
