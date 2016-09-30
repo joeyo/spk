@@ -44,8 +44,10 @@ protected:
 public:
 	void set_bandwidth(double _sigma) // units of seconds
 	{
+		// note that the scale factor ("A") has an extra factor of two because
+		// we are using a half Gaussian kernel (t > 0)
 		sigma = _sigma;
-		A =  1/(sqrt(2*3.14159265)*sigma);
+		A =  2/(sqrt(2*3.14159265)*sigma);
 		B = -1/(2*sigma*sigma);
 	}
 	double get_rate(double time)
@@ -77,8 +79,10 @@ protected:
 public:
 	void set_bandwidth(double _sigma) // units of seconds
 	{
+		// note that the scale factor ("A") has an extra factor of two because
+		// we are using a half Exponential kernel (t > 0)
 		sigma = _sigma;
-		A =  1/(sqrt(2)*sigma);
+		A =  2/(sqrt(2)*sigma);
 		B = -sqrt(2);
 	}
 	double get_rate(double time)
