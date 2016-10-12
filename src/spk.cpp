@@ -122,11 +122,15 @@ string g_boxcar_fifo_in  = "/tmp/boxcar_in.fifo";
 string g_boxcar_fifo_out = "/tmp/boxcar_out.fifo";
 string g_boxcar_mmap = "/tmp/boxcar.mmap";
 double g_boxcar_bandwidth = 0.01; // seconds
+bool g_boxcar_use_unsorted = false;
+bool g_boxcar_enabled = false;
 
 string g_gks_fifo_in  = "/tmp/gks_in.fifo";
 string g_gks_fifo_out = "/tmp/gks_out.fifo";
 string g_gks_mmap = "/tmp/gks.mmap";
 double g_gks_bandwidth = 0.01; // seconds
+bool g_gks_use_unsorted = false;
+bool g_gks_enabled = false;
 
 vector <Artifact *> g_artifact;
 
@@ -1062,11 +1066,26 @@ void sorter(int ch)
 				g_spikewriter.add(s); // other thread deletes memory
 			}
 			if (unit < NUNIT) { // should always be true
-				if (unit > 0) {
+
+				if (unit > 0) { // for drawing, excluding unsorted
 					int uu = unit-1;
-					g_spikeraster[uu]->addEvent((float)the_time, ch); // for drawing
-					g_boxcar[ch*NSORT+uu]->add(the_time); 	// excluding unsorted
-					g_ks[ch*NSORT+uu]->add(the_time); 		// ""
+					g_spikeraster[uu]->addEvent((float)the_time, ch);
+				}
+
+				if (g_boxcar_enabled) {
+					if (g_boxcar_use_unsorted) {
+						g_boxcar[ch*NUNIT+unit]->add(the_time);
+					} else {
+						g_boxcar[ch*NSORT+unit-1]->add(the_time);
+					}
+				}
+
+				if (g_gks_enabled) {
+					if (g_gks_use_unsorted) {
+						g_ks[ch*NUNIT+unit]->add(the_time);
+					} else {
+						g_ks[ch*NSORT+unit-1]->add(the_time);
+					}
 				}
 			}
 		}
@@ -1234,7 +1253,9 @@ void boxcar_binner()
 	// m = memmapfile('/tmp/boxcar.mmap', 'Format', {'uint16' [96*4] 'x'})
 	// A = m.Data(1).x;
 
+	printf("Boxcar Binner, ");
 	auto nc = g_boxcar.size();
+	printf("%lu features\n", nc);
 	size_t length = nc*sizeof(u16);
 	auto mmh = new mmapHelp(length, g_boxcar_mmap.c_str());
 	volatile u16 *bin = (u16 *)mmh->m_addr;
@@ -1277,7 +1298,9 @@ void gks_binner()
 	// m = memmapfile('/tmp/gks.mmap', 'Format', {'uint16' [96*4] 'x'})
 	// A = m.Data(1).x;
 
+	printf("Gaussian Kernel Smoother Binner, ");
 	auto nc = g_ks.size();
+	printf("%lu features\n", nc);
 	size_t length = nc*sizeof(u16);
 	auto mmh = new mmapHelp(length, g_gks_mmap.c_str());
 	volatile u16 *bin = (u16 *)mmh->m_addr;
@@ -1794,11 +1817,15 @@ int main(int argc, char **argv)
 	conf.getString("spk.boxcar.fifo_out", g_boxcar_fifo_out);
 	conf.getString("spk.boxcar.mmap", g_boxcar_mmap);
 	conf.getDouble("spk.boxcar.bandwidth", g_boxcar_bandwidth);
+	g_boxcar_use_unsorted = conf.getBool("spk.boxcar.use_unsorted");
+	g_boxcar_enabled = conf.getBool("spk.boxcar.enabled");
 
 	conf.getString("spk.gks.fifo_in", g_gks_fifo_in);
 	conf.getString("spk.gks.fifo_out", g_gks_fifo_out);
 	conf.getString("spk.gks.mmap", g_gks_mmap);
 	conf.getDouble("spk.gks.bandwidth", g_gks_bandwidth);
+	g_gks_use_unsorted = conf.getBool("spk.gks.use_unsorted");
+	g_gks_enabled = conf.getBool("spk.gks.enabled");
 
 	std::string zq = "ipc:///tmp/query.zmq";
 	conf.getString("spk.query_socket", zq);
@@ -1886,16 +1913,30 @@ int main(int argc, char **argv)
 		die(zcontext, 1);
 	}
 
-	for (size_t i=0; i<(nnc*NSORT); i++) {
-		// boxcar binner
-		auto box = new FiringRate();
-		box->set_bin_width(g_boxcar_bandwidth); // (seconds)
-		g_boxcar.push_back(box);
+	if (g_boxcar_enabled) {
+		size_t numchans = nnc*NSORT;
+		if (g_boxcar_use_unsorted) {
+			numchans = nnc*NUNIT;
+		}
+		for (size_t i=0; i<numchans; i++) {
+			// boxcar binner
+			auto box = new FiringRate();
+			box->set_bin_width(g_boxcar_bandwidth); // (seconds)
+			g_boxcar.push_back(box);
+		}
+	}
 
-		// gaussian kernel smoother
-		auto ks = new GaussianKernelSmoother();
-		ks->set_bandwidth(g_gks_bandwidth); // (seconds)
-		g_ks.push_back(ks);
+	if (g_gks_enabled) {
+		size_t numchans = nnc*NSORT;
+		if (g_gks_use_unsorted) {
+			numchans = nnc*NUNIT;
+		}
+		for (size_t i=0; i<numchans; i++) {
+			// gaussian kernel smoother
+			auto ks = new GaussianKernelSmoother();
+			ks->set_bandwidth(g_gks_bandwidth); // (seconds)
+			g_ks.push_back(ks);
+		}
 	}
 
 	for (u64 ch=0; ch<nnc; ch++) {
@@ -2452,8 +2493,12 @@ int main(int argc, char **argv)
 
 	threads.push_back(thread(worker, zcontext, zb.c_str(), ze.c_str()));
 	threads.push_back(thread(spikewrite));
-	threads.push_back(thread(boxcar_binner));
-	threads.push_back(thread(gks_binner));
+	if (g_boxcar_enabled) {
+		threads.push_back(thread(boxcar_binner));
+	}
+	if (g_gks_enabled) {
+		threads.push_back(thread(gks_binner));
+	}
 
 	gtk_widget_show_all(window);
 
