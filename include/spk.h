@@ -6,9 +6,7 @@
 enum MODES { // ui tabs
 	MODE_RASTERS = 0,
 	MODE_SPIKES,
-	MODE_SORT,
-	MODE_ICMS,
-	MODE_SAVE
+	MODE_SORT
 };
 
 #if defined KHZ_24
@@ -30,7 +28,6 @@ enum MODES { // ui tabs
 #define NFBUF 		4			// number of continuous channels to draw
 #define NSBUF		1024 		// number of recent spikes to track
 
-#define STIMCHAN 	8
 #define NSORT		4
 #define NUNIT		(NSORT+1)	// including unsorted (parens are important!)
 

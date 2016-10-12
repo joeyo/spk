@@ -64,7 +64,6 @@
 #include "mmaphelp.h"
 #include "fifohelp.h"
 #include "channel.h"
-#include "artifact.h"
 #include "timesync.h"
 #include "matStor.h"
 #include "jacksnd.h"
@@ -96,7 +95,6 @@ float	g_cursPos[2];
 float	g_viewportSize[2] = {640, 480}; //width, height.
 
 class Channel;
-class Artifact;
 
 vector <VboTimeseries *> g_timeseries;
 vector <VboRaster *> g_spikeraster;
@@ -132,7 +130,6 @@ double g_gks_bandwidth = 0.01; // seconds
 bool g_gks_use_unsorted = false;
 bool g_gks_enabled = false;
 
-vector <Artifact *> g_artifact;
 
 #if defined KHZ_24
 double g_sr = 24414.0625;
@@ -158,7 +155,6 @@ gboolean g_showContGrid = false;
 gboolean g_showContThresh = true;
 
 bool g_rtMouseBtn = false;
-gboolean g_saveICMSWF = true;
 
 // for drawing circles around pca points
 int 	g_polyChan = 0;
@@ -189,19 +185,6 @@ float g_autoThreshold = -3.5; //standard deviations. default negative, w/e.
 float g_neoThreshold = 8;
 int g_spikesCols = 16;
 
-
-gboolean g_enableArtifactSubtr = false;
-gboolean g_trainArtifactTempl = false;
-int g_numArtifactSamps = 1e4; 	// number of artifacts to use to build template
-int g_stimChanDisp = 0;	// number of artifact channels
-float g_artifactDispAtten = 0.1f;
-
-gboolean g_enableArtifactBlanking = false;
-int g_artifactBlankingSamps = 48;
-int g_artifactBlankingPreSamps = 24;
-
-gboolean g_enableStimClockBlanking = false;
-
 int g_mode = MODE_RASTERS;
 int g_drawmode[2] = {GL_POINTS, GL_LINE_STRIP};
 int	g_drawmodep = 1;
@@ -224,14 +207,10 @@ void saveState()
 	MatStor ms(g_prefstr); 	// no need to load before saving here
 	for (auto &c : g_c)
 		c->save(&ms);
-	for (auto &a : g_artifact)
-		a->save(&ms);
-	//g_nlms->save(&ms);
 	ms.setInt("channel", g_channel);
 
 	ms.setStructValue("savemode", "unsorted_spikes", 0, (float)g_saveUnsorted);
 	ms.setStructValue("savemode", "spike_waveforms", 0, (float)g_saveSpikeWF);
-	ms.setStructValue("savemode", "icms_waveforms", 0, (float)g_saveICMSWF);
 
 	ms.setStructValue("gui","draw_mode",0,(float)g_drawmodep);
 	ms.setStructValue("gui","blend_mode",0,(float)g_blendmodep);
@@ -255,17 +234,6 @@ void saveState()
 	ms.setStructValue("wf","show_std",0,(float)g_showWFstd);
 
 	ms.setStructValue("wf","span",0,g_zoomSpan);
-
-	ms.setStructValue("icms","template_train",0,(float)g_trainArtifactTempl);
-	ms.setStructValue("icms","template_subtract",0,(float)g_enableArtifactSubtr);
-	ms.setStructValue("icms","template_numsamples",0,(float)g_numArtifactSamps);
-	ms.setStructValue("icms","template_chan_disp",0,(float)g_stimChanDisp);
-	ms.setStructValue("icms","template_chan_atten",0,g_artifactDispAtten);
-
-	ms.setStructValue("icms","blank_enable",0,(float)g_enableArtifactBlanking);
-	ms.setStructValue("icms","blank_samples",0,(float)g_artifactBlankingSamps);
-	ms.setStructValue("icms","blank_pre_samples",0,(float)g_artifactBlankingPreSamps);
-	ms.setStructValue("icms","blank_clock_enable",0,(float)g_enableStimClockBlanking);
 
 	ms.save();
 }
@@ -792,9 +760,7 @@ expose1 (GtkWidget *da, GdkEventExpose *, gpointer )
 		}
 		glPopMatrix();
 	}
-	if (g_mode == MODE_ICMS) {
-		g_artifact[g_stimChanDisp]->draw();
-	}
+
 	glDisableClientState(GL_VERTEX_ARRAY);
 
 	if (gdk_gl_drawable_is_double_buffered (gldrawable))
@@ -1763,7 +1729,7 @@ int main(int argc, char **argv)
 
 	g_tsc = new TimeSyncClient(); //tells us the ticks when things happen.
 
-	string verstr = "v2.50";
+	string verstr = "v2.60";
 
 	string titlestr = "spk ";
 	titlestr += verstr;
@@ -1776,16 +1742,12 @@ int main(int argc, char **argv)
 	GtkWidget *window;
 	GtkWidget *da1;
 	GdkGLConfig *glconfig;
-	GtkWidget *box1, *box2, *box3, *box4;
+	GtkWidget *box1, *box2, *box3;
 	GtkWidget *bx, *bx2, *v1, *label;
 	GtkWidget *paned;
 	GtkWidget *frame;
 
 	string s;
-
-	//FiringRate test_fr;
-	//test_fr.set_bin_params(15,1.0);
-	//test_fr.get_bins_test();
 
 	// load matlab preferences
 	if (argc > 1)
@@ -1963,8 +1925,6 @@ int main(int argc, char **argv)
 		if (g_channel[i] < 0) g_channel[i] = 0;
 		if (g_channel[i] >= (int)nnc) g_channel[i] = (int)nnc-1;
 	}
-	for (int i=0; i<STIMCHAN; i++)
-		g_artifact.push_back(new Artifact(i, &ms));
 
 	for (int i=0; i<NFBUF; i++) {
 		g_timeseries.push_back(new VboTimeseries(NSAMP));
@@ -2019,7 +1979,6 @@ int main(int argc, char **argv)
 
 	g_saveUnsorted 	= (bool)ms.getStructValue("savemode", "unsorted_spikes", 0, (float)g_saveUnsorted);
 	g_saveSpikeWF  	= (bool)ms.getStructValue("savemode", "spike_waveforms", 0, (float)g_saveSpikeWF);
-	g_saveICMSWF	= (bool)ms.getStructValue("savemode", "icms_waveforms", 0, (float)g_saveICMSWF);
 
 	g_drawmodep = (int) ms.getStructValue("gui", "draw_mode", 0, (float)g_drawmodep);
 	g_blendmodep = (int) ms.getStructValue("gui", "blend_mode", 0, (float)g_blendmodep);
@@ -2042,19 +2001,6 @@ int main(int argc, char **argv)
 	g_showISIhist = (bool)ms.getStructValue("wf", "show_isi", 0, (float)g_showISIhist);
 	g_showWFstd = (bool)ms.getStructValue("wf", "show_std", 0, (float)g_showWFstd);
 	g_zoomSpan = ms.getStructValue("wf", "span", 0, g_zoomSpan);
-
-	g_trainArtifactTempl = (bool)ms.getStructValue("icms", "template_train", 0, (float)g_trainArtifactTempl);
-	g_enableArtifactSubtr = (bool)ms.getStructValue("icms", "template_subtract", 0, (float)g_enableArtifactSubtr);
-	g_numArtifactSamps = (int)ms.getStructValue("icms", "template_numsamples", 0, (float)g_numArtifactSamps);
-	g_stimChanDisp = (int)ms.getStructValue("icms", "template_chan_disp", 0, (float)g_stimChanDisp);
-	g_artifactDispAtten = ms.getStructValue("icms", "template_chan_atten", 0, g_artifactDispAtten);
-
-	g_enableArtifactBlanking = (bool)ms.getStructValue("icms", "blank_enable", 0, (float)g_enableArtifactBlanking);
-	g_artifactBlankingSamps = (int)ms.getStructValue("icms", "blank_samples", 0, (float)g_artifactBlankingSamps);
-	g_artifactBlankingPreSamps = (int)ms.getStructValue("icms", "blank_pre_samples", 0, (float)g_artifactBlankingPreSamps);
-	g_enableStimClockBlanking = (bool)ms.getStructValue("icms", "blank_clock_enable", 0, (float)g_enableStimClockBlanking);
-
-	//g_dropped = 0;
 
 	gtk_init (&argc, &argv);
 	gtk_gl_init(&argc, &argv);
@@ -2114,9 +2060,13 @@ int main(int argc, char **argv)
 	gtk_box_pack_start(GTK_BOX(v1), g_notebook, TRUE, TRUE, 1);
 	gtk_widget_show(g_notebook);
 
-	// [ rasters | spikes | sort | icms | save ]
 
-	// add a page for rasters
+
+	// [ rasters | spikes | sort ]
+
+
+
+	// RASTERS
 	box1 = gtk_vbox_new(FALSE, 2);
 
 	//add a gain set-all button.
@@ -2132,12 +2082,28 @@ int main(int argc, char **argv)
 		}
 	}, nullptr);
 
-	mk_checkbox("show grid", box1, &g_showContGrid, basic_checkbox_cb);
+	frame = gtk_frame_new("Show?");
+	gtk_box_pack_start(GTK_BOX(box1), frame, TRUE, TRUE, 0);
 
-	mk_checkbox("show threshold", box1, &g_showContThresh, basic_checkbox_cb);
+	box2 = gtk_hbox_new(TRUE, 0);
+	gtk_widget_show(box2);
+	gtk_container_add (GTK_CONTAINER (frame), box2);
 
-	//add in a zoom spinner.
-	mk_spinner("Waveform Span", box1, g_zoomSpan, 0.1, 2.7, 0.05,
+	mk_checkbox("grid", box2, &g_showContGrid, basic_checkbox_cb);
+	mk_checkbox("threshold", box2, &g_showContThresh, basic_checkbox_cb);
+
+	frame = gtk_frame_new("Span");
+	gtk_box_pack_start(GTK_BOX(box1), frame, TRUE, TRUE, 0);
+
+	box2 = gtk_vbox_new(TRUE, 0);
+	gtk_widget_show(box2);
+	gtk_container_add (GTK_CONTAINER (frame), box2);
+
+	mk_spinner("Raster", box2,
+	           g_rasterSpan, 1.0, 100.0, 1.0,
+	           basic_spinfloat_cb, (gpointer)&g_rasterSpan);
+
+	mk_spinner("Waveform", box2, g_zoomSpan, 0.1, 2.7, 0.05,
 	[](GtkWidget *_spin, gpointer) {
 		// should be in seconds.
 		float f = (float) gtk_spin_button_get_value(GTK_SPIN_BUTTON(_spin));
@@ -2146,9 +2112,6 @@ int main(int argc, char **argv)
 			x->setNPlot(f * SRATE_HZ);
 	}, nullptr);
 
-	mk_spinner("Raster span", box1,
-	           g_rasterSpan, 1.0, 100.0, 1.0,
-	           basic_spinfloat_cb, (gpointer)&g_rasterSpan);
 
 	gtk_widget_show (box1);
 	label = gtk_label_new("rasters");
@@ -2156,7 +2119,8 @@ int main(int argc, char **argv)
 	gtk_notebook_insert_page(GTK_NOTEBOOK(g_notebook), box1, label, 0);
 	// this concludes the rasters page.
 
-	//add page for sorting. (4 units .. for now .. such is the legacy. )
+
+	// SORT
 	box1 = gtk_vbox_new (FALSE, 0);
 
 	//4-channel control blocks.
@@ -2202,13 +2166,10 @@ int main(int argc, char **argv)
 	label = gtk_label_new("sort");
 	gtk_label_set_angle(GTK_LABEL(label), 90);
 	gtk_notebook_insert_page(GTK_NOTEBOOK(g_notebook), box1, label, 1);
-	// insert sort out of order
-
-	//add page for sorting a single unit.
-	//box1 = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	// nb insert sort out of order
 
 
-	//add a page for viewing all the spikes.
+	// SPIKES
 	box1 = gtk_vbox_new(FALSE, 0);
 
 	mk_combobox("none,abs,NEO", 3, box1, false, "Spike Pre-emphasis",
@@ -2266,106 +2227,45 @@ int main(int argc, char **argv)
 	mk_spinner("Columns", box1, g_spikesCols, 3, 32, 1,
 	           basic_spinint_cb, (gpointer)&g_spikesCols);
 
-// end spikes page.
+	//add draw mode (applicable to all)
+	bx = gtk_hbox_new(TRUE, 0);
+	gtk_widget_show(bx);
+	gtk_box_pack_start(GTK_BOX(box1), bx, TRUE, TRUE, 0);
+
+	mk_radio("points,lines", 2, bx, true, "draw mode", g_drawmodep,
+	[](GtkWidget *_button, gpointer _p) {
+		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(_button))) {
+			g_drawmodep = (int)((i64)_p & 0xf);
+		}
+	}
+	        );
+
+	mk_radio("normal,accum", 2, bx, true, "blend mode", g_blendmodep,
+	[](GtkWidget *_button, gpointer _p) {
+		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(_button))) {
+			g_blendmodep = (int)((i64)_p & 0xf);
+		}
+	}
+	        );
+
+	// end spikes page.
 	gtk_widget_show (box1);
 	label = gtk_label_new("spikes");
 	gtk_label_set_angle(GTK_LABEL(label), 90);
 	gtk_notebook_insert_page(GTK_NOTEBOOK(g_notebook), box1, label, 1);
 
 
-	// add a page for icms
-	box1 = gtk_vbox_new(FALSE, 0);
 
-	s = "Artifact Subtraction";
-	frame = gtk_frame_new (s.c_str());
-	gtk_box_pack_start (GTK_BOX (box1), frame, FALSE, FALSE, 1);
+	// bottom section, visible on all screens
+	bx = gtk_vbox_new (FALSE, 3);
 
-	box2 = gtk_vbox_new(FALSE, 0);
-	gtk_container_add (GTK_CONTAINER (frame), box2);
-
-	box3 = gtk_hbox_new(FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (box2), box3, TRUE, TRUE, 0);
-
-	box4 = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (box3), box4, TRUE, TRUE, 0);
-	mk_checkbox("train", box4,
-	            &g_trainArtifactTempl, basic_checkbox_cb);
-
-	box4 = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (box3), box4, TRUE, TRUE, 0);
-	mk_checkbox("enable", box4,
-	            &g_enableArtifactSubtr, basic_checkbox_cb);
-
-	mk_spinner("num\ntemplate\nsamples", box2, g_numArtifactSamps,
-	           1e2, 1e5, 1, basic_spinint_cb, (gpointer)&g_numArtifactSamps);
-
-	box3 = gtk_hbox_new(FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (box2), box3, TRUE, TRUE, 0);
-
-	box4 = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (box3), box4, TRUE, TRUE, 0);
-	mk_button("clear all", box4,
-	[](GtkWidget *, gpointer) {
-		for (auto &a : g_artifact)
-			a->clearArtifacts();
-	}, nullptr);
-
-	box4 = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (box3), box4, TRUE, TRUE, 0);
-	mk_button("clear this", box4,
-	[](GtkWidget *, gpointer) {
-		g_artifact[g_stimChanDisp]->clearArtifacts();
-	}, nullptr);
-
-	mk_spinner("stim chan", box2, g_stimChanDisp,
-	           0, g_artifact.size()-1, 1, basic_spinint_cb, (gpointer)&g_stimChanDisp);
-	mk_spinner("attenuation", box2,
-	           g_artifactDispAtten, 0.1, 10, 0.1, basic_spinfloat_cb, (gpointer)&g_artifactDispAtten);
-
-	s = "Artifact Blanking";
-	frame = gtk_frame_new (s.c_str());
-	gtk_box_pack_start (GTK_BOX (box1), frame, FALSE, FALSE, 1);
-
-	box2 = gtk_vbox_new(FALSE, 0);
-	gtk_container_add (GTK_CONTAINER (frame), box2);
-
-	mk_checkbox("enable", box2,
-	            &g_enableArtifactBlanking, basic_checkbox_cb);
-
-	mk_spinner("pre-blanking\nsamples", box2, g_artifactBlankingPreSamps, 0, 128, 1,
-	[](GtkWidget *_spin, gpointer) {
-		int x = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(_spin));
-		g_artifactBlankingPreSamps = (x + g_artifactBlankingSamps > ARTBUF)
-		                             ? ARTBUF - g_artifactBlankingSamps : x;
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(_spin), g_artifactBlankingPreSamps);
-	}, nullptr);
-
-	mk_spinner("blanking\nsamples", box2, g_artifactBlankingSamps, 0, 128, 1,
-	[](GtkWidget *_spin, gpointer) {
-		int x = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(_spin));
-		g_artifactBlankingSamps = (x + g_artifactBlankingPreSamps > ARTBUF)
-		                          ? ARTBUF - g_artifactBlankingPreSamps : x;
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(_spin), g_artifactBlankingSamps);
-	}, nullptr);
-
-	mk_checkbox("enable stim clock blanking", box1,
-	            &g_enableStimClockBlanking, basic_checkbox_cb);
-
-	// end icms page
-	gtk_widget_show(box1);
-	label = gtk_label_new("icms");
-	gtk_label_set_angle(GTK_LABEL(label), 90);
-	gtk_notebook_insert_page(GTK_NOTEBOOK(g_notebook), box1, label, 3);
-
-
-	// add page for saving
-	box1 = gtk_vbox_new(FALSE, 3);
+	gtk_box_pack_start (GTK_BOX (v1), bx, TRUE, TRUE, 0);
 
 	GtkWidget *bxx1, *bxx2;
 
 	s = "Save Spikes";
 	frame = gtk_frame_new (s.c_str());
-	gtk_box_pack_start (GTK_BOX (box1), frame, FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX (bx), frame, FALSE, FALSE, 1);
 	bxx1 = gtk_hbox_new (TRUE, 0);
 	gtk_container_add (GTK_CONTAINER (frame), bxx1);
 
@@ -2383,42 +2283,10 @@ int main(int argc, char **argv)
 
 	mk_checkbox("Unsorted?", bxx2, &g_saveUnsorted,	basic_checkbox_cb);
 
-	mk_button("Save Preferences", box1,
+	mk_button("Save Preferences", bx,
 	[](GtkWidget *, gpointer) {
 		saveState();
 	}, nullptr);
-
-
-	// end save page
-	gtk_widget_show(box1);
-	label = gtk_label_new("save");
-	gtk_label_set_angle(GTK_LABEL(label), 90);
-	gtk_notebook_insert_page(GTK_NOTEBOOK(g_notebook), box1, label, 4);
-
-	// bottom section, visible on all screens
-	bx = gtk_hbox_new (FALSE, 3);
-
-	gtk_box_pack_start (GTK_BOX (v1), bx, TRUE, TRUE, 0);
-
-	//add draw mode (applicable to all)
-	bx = gtk_hbox_new(FALSE, 0);
-	mk_radio("points,lines", 2, bx, true, "draw mode", g_drawmodep,
-	[](GtkWidget *_button, gpointer _p) {
-		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(_button))) {
-			g_drawmodep = (int)((i64)_p & 0xf);
-		}
-	}
-	        );
-
-	mk_radio("normal,accum", 2, bx, true, "blend mode", g_blendmodep,
-	[](GtkWidget *_button, gpointer _p) {
-		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(_button))) {
-			g_blendmodep = (int)((i64)_p & 0xf);
-		}
-	}
-	        );
-
-	gtk_box_pack_start (GTK_BOX (v1), bx, TRUE, TRUE, 0);
 
 	bx = gtk_hbox_new (FALSE, 3);
 	label = gtk_label_new ("");
@@ -2485,8 +2353,6 @@ int main(int argc, char **argv)
 
 	printf("sampling rate: %f kHz\n", SRATE_KHZ);
 
-	printf("artifact buffer: %d samples\n",ARTBUF);
-
 	g_startTime = gettime();
 
 	vector <thread> threads;
@@ -2537,8 +2403,6 @@ int main(int argc, char **argv)
 	for (auto &o : g_spikeraster)
 		delete o;
 	for (auto &o : g_timeseries)
-		delete o;
-	for (auto &o : g_artifact)
 		delete o;
 	for (auto &o : g_boxcar)
 		delete o;
