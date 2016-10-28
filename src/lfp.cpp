@@ -41,17 +41,20 @@ static void die(void *ctx, int status)
 
 int main(int argc, char *argv[])
 {
-	// lfp [band=(beta|gamma|hgamma)] [zmq in] [zmq out]
+	// lfp [band=(theta|beta|gamma|hgamma)] [zmq in] [zmq out]
 
 	if (argc < 4) {
 		printf("\nlfp - LFP band-pass filter (IIR, 4th order Butterworth)\n");
-		printf("usage: lfp [band=(beta|gamma|hgamma)] [zmq in] [zmq out]\n\n");
-		printf("Beta is 12-30 Hz\nGamma 30-60 Hz\nHigh Gamma 60-200 Hz\n\n");
+		printf("usage: lfp [band=(theta|beta|gamma|hgamma)] [zmq in] [zmq out]\n\n");
+		printf("Theta is 4-12 Hz\nBeta is 12-30 Hz\nGamma 30-60 Hz\nHigh Gamma 60-200 Hz\n\n");
 		return 1;
 	}
 
 	int lo, hi;
-	if (strcmp(argv[1],"beta") == 0) {
+	if (strcmp(argv[1],"theta") == 0) {
+		lo = 4;
+		hi = 12;
+	} else if (strcmp(argv[1],"beta") == 0) {
 		lo = 12;
 		hi = 30;
 	} else if (strcmp(argv[1],"gamma") == 0) {
@@ -133,6 +136,9 @@ int main(int argc, char *argv[])
 	for (size_t i=0; i<nnc; i++) {
 #if defined KHZ_24
 		switch (lo+hi) {
+		case 16: // theta band
+			bandpass.push_back(new FilterButterBand_24k_4_12());
+			break;
 		case 42: // beta band
 			bandpass.push_back(new FilterButterBand_24k_12_30());
 			break;

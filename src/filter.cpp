@@ -41,6 +41,37 @@ void Filter::Proc(float *in, float *out, u32 kpoints)
 
 
 
+// 4th-order Butterworth bandpass
+// 4 Hz to 12 Hz @ 24.4140625 kHz (Theta band)
+// Create with MATLAB like so:
+/*
+n = 4; % filter order
+sr = 24414.0625;
+Wn = [4 12] * 2 / sr;
+[B,A] = butter(n/2,Wn);
+sprintf('B.push_back(%0.15e);\n',B)
+sprintf('A.push_back(%0.15e);\n',A)
+sprintf('d.push_back(%d);\n', zeros(n,1))
+*/
+FilterButterBand_24k_4_12::FilterButterBand_24k_4_12()
+{
+	B.push_back(1.058242549564607e-06);
+	B.push_back(0.000000000000000e+00);
+	B.push_back(-2.116485099129213e-06);
+	B.push_back(0.000000000000000e+00);
+	B.push_back(1.058242549564607e-06);
+	A.push_back(1.000000000000000e+00);
+	A.push_back(-3.997081960473920e+00);
+	A.push_back(5.991256477290648e+00);
+	A.push_back(-3.991267063895913e+00);
+	A.push_back(9.970925470892770e-01);
+	d.push_back(0);
+	d.push_back(0);
+	d.push_back(0);
+	d.push_back(0);
+}
+
+
 
 // 4th-order Butterworth bandpass
 // 12 Hz to 30 Hz @ 24.4140625 kHz (Beta band)

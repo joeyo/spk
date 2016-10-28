@@ -27,6 +27,11 @@ protected:
 
 
 // BANDPASS
+class FilterButterBand_24k_4_12 : public Filter
+{
+public:
+	FilterButterBand_24k_4_12();
+};
 class FilterButterBand_24k_12_30 : public Filter
 {
 public:
