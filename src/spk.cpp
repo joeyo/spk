@@ -899,7 +899,7 @@ void destroyGUI(GtkWidget *, gpointer)
 {
 	destroy(SIGINT);
 }
-void sorter(int ch)
+void sorter(int ch, void *sock)
 {
 	float 	wf_sp[3*NWFSAMP];
 	float 	neo_sp[3*NWFSAMP];
@@ -1033,6 +1033,12 @@ void sorter(int ch)
 			}
 			if (unit < NUNIT) { // should always be true
 
+
+				// XXX HACK HACK HACK FIX ME FIX ME XXX
+				if (unit == 4 && ch == 0) {
+					zmq_send(sock, "x", 1, 0);
+				}
+
 				if (unit > 0) { // for drawing, excluding unsorted
 					int uu = unit-1;
 					g_spikeraster[uu]->addEvent((float)the_time, ch);
@@ -1066,7 +1072,7 @@ void spikewrite()
 			usleep(1e5);
 	}
 }
-void worker(void *ctx, const char *zb, const char *ze)
+void worker(void *ctx, const char *zb, const char *ze, const char *zs)
 {
 
 	// Prepare our sockets
@@ -1083,6 +1089,10 @@ void worker(void *ctx, const char *zb, const char *ze)
 	void *controller = zmq_socket(ctx, ZMQ_SUB);
 	zmq_connect(controller, "inproc://controller");
 	zmq_setsockopt(controller, ZMQ_SUBSCRIBE, "", 0);
+
+	// spike socket
+	void *spike_sock = zmq_socket(ctx, ZMQ_PUB);
+	zmq_bind(spike_sock, zs);
 
 	// init poll set
 	zmq_pollitem_t items [] = {
@@ -1142,7 +1152,7 @@ void worker(void *ctx, const char *zb, const char *ze)
 					ch->m_wfstats(samp);
 					// sort -- see if samples pass threshold. if so, copy.
 					if (ch->getEnabled()) {
-						sorter(ch->m_ch); // XXX put this into channel class?
+						sorter(ch->m_ch, spike_sock); // XXX put this into channel class?
 					}
 				}
 			}
@@ -1200,6 +1210,12 @@ void worker(void *ctx, const char *zb, const char *ze)
 		}
 
 	}
+
+	zmq_close(controller);
+	zmq_close(events_sock);
+	zmq_close(neural_sock);
+	zmq_close(spike_sock);
+
 }
 
 void flush_pipe(int fid)
@@ -1805,6 +1821,10 @@ int main(int argc, char **argv)
 	conf.getString("spk.events_socket", ze);
 	printf("zmq events socket: %s\n", ze.c_str());
 
+	std::string zs = "ipc:///tmp/spk.zmq";
+	conf.getString("spk.spike_socket", zs);
+	printf("zmq spike socket: %s\n", zs.c_str());
+
 	void *zcontext = zmq_ctx_new();
 	if (zcontext == NULL) {
 		error("zmq: could not create context");
@@ -2376,7 +2396,7 @@ int main(int argc, char **argv)
 
 	vector <thread> threads;
 
-	threads.push_back(thread(worker, zcontext, zb.c_str(), ze.c_str()));
+	threads.push_back(thread(worker, zcontext, zb.c_str(), ze.c_str(), zs.c_str()));
 	threads.push_back(thread(spikewrite));
 	if (g_boxcar_enabled) {
 		threads.push_back(thread(boxcar_binner));
