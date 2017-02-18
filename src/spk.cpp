@@ -1793,6 +1793,10 @@ int main(int argc, char **argv)
 	conf.getString("spk.query_socket", zq);
 	printf("zmq query socket: %s\n", zq.c_str());
 
+	std::string zt = "ipc:///tmp/time.zmq";
+	conf.getString("spk.time_socket", zt);
+	printf("zmq time socket: %s\n", zt.c_str());
+
 	std::string zb = "ipc:///tmp/broadband.zmq";
 	conf.getString("spk.broadband_socket", zb);
 	printf("zmq broadband socket: %s\n", zb.c_str());
@@ -1813,6 +1817,7 @@ int main(int argc, char **argv)
 		die(zcontext, 1);
 	}
 
+	// controller socket
 	void *controller = zmq_socket(zcontext, ZMQ_PUB);
 	if (controller == NULL) {
 		error("zmq: could not create socket");
@@ -1825,6 +1830,7 @@ int main(int argc, char **argv)
 		die(zcontext, 1);
 	}
 
+	// query socket
 	void *query_sock = zmq_socket(zcontext, ZMQ_REQ);
 	if (query_sock == NULL) {
 		error("zmq: could not create socket");
@@ -1836,6 +1842,19 @@ int main(int argc, char **argv)
 	zmq_setsockopt(query_sock, ZMQ_LINGER, &linger, sizeof(linger));
 
 	if (zmq_connect(query_sock, zq.c_str()) != 0) {
+		error("zmq: could not connect to socket");
+		die(zcontext, 1);
+	}
+
+	// XXX  TIME SOCK
+	void *time_sock = zmq_socket(zcontext, ZMQ_REQ);
+	if (time_sock == NULL) {
+		error("zmq: could not create socket");
+		die(zcontext, 1);
+	}
+	g_socks.push_back(time_sock);
+	zmq_setsockopt(time_sock, ZMQ_LINGER, &linger, sizeof(linger));
+	if (zmq_connect(time_sock, zt.c_str()) != 0) {
 		error("zmq: could not connect to socket");
 		die(zcontext, 1);
 	}

@@ -178,7 +178,7 @@ public:
 	{
 		return (time - m_timeOffset) * m_slope + m_offset;
 	}
-	int getTicks()
+	int getTicks()	// ie now
 	{
 		return m_ticks;
 	}
@@ -186,7 +186,11 @@ public:
 	{
 		return (ticks - m_offset)/m_slope + m_timeOffset;
 	}
-	std::string getTime()
+	long double getTime() // ie now
+	{
+		return gettime();
+	}
+	std::string getTimeString()
 	{
 		double t = (double)gettime();
 		double hours = floor(t / 3600.0);

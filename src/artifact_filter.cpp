@@ -9,7 +9,6 @@ ArtifactFilter::ArtifactFilter(int _n)
 
 	W.fill(1.0/(double)n);	// init weights
 	W.diag().zeros();		// set diag to zero
-
 }
 
 ArtifactFilter::~ArtifactFilter()

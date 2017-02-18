@@ -8,6 +8,8 @@ spk = {
 	-- the query sock is used by many programs in the spk family
 	query_socket = "ipc:///tmp/query.zmq",
 
+	time_socket = "ipc:///tmp/time.zmq",
+
 	-- the broadband and events socks are used by spk alone
 	broadband_socket = "ipc:///tmp/broadband.zmq",
 	events_socket = "ipc:///tmp/events.zmq",

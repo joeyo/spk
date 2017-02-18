@@ -38,7 +38,7 @@ h5bbsave.cpp \
 h5evsave.cpp
 : foreach $(OBJS) |> !cpp |> %B.o
 
-PKG_LIBS  = gtk+-2.0 blas-openblas gtkglext-1.0 matio gl glu
+PKG_LIBS  = gtk+-2.0 blas-openblas matio gl glu gtkglext-1.0
 CPPFLAGS += `pkg-config --cflags $(PKG_LIBS)`
 
 # FOR PREPARATION TO MIGRATE TO GTK3

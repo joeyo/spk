@@ -86,6 +86,10 @@ void po8eConf::querySocketName(std::string &s)
 {
 	getString("po8e.query_socket", s); // s unchanged on error
 }
+void po8eConf::timeSocketName(std::string &s)
+{
+	getString("po8e.time_socket", s); // s unchanged on error
+}
 // allocates memory
 po8e::card *po8eConf::loadCard(size_t idx)
 {

@@ -47,7 +47,7 @@ lib/gettime.o \
 src/h5writer.o \
 src/h5eventwriter.o |> !ld |> bin/h5evsave
 
-PKG_LIBS  = gtk+-2.0 gtkglext-1.0 gl glu
+PKG_LIBS  = gtk+-2.0 gl glu gtkglext-1.0
 LDFLAGS += -lCg -lCgGL
 LDFLAGS += `pkg-config --libs $(PKG_LIBS)`
 

@@ -39,6 +39,7 @@ size_t g_po8e_read_size = 16; // po8e block read size
 string g_po8e_neural_socket_name = "ipc:///tmp/broadband.zmq";
 string g_po8e_events_socket_name = "ipc:///tmp/events.zmq";
 string g_po8e_query_socket_name = "ipc:///tmp/query.zmq";
+string g_po8e_time_socket_name = "ipc:///tmp/time.zmq";
 
 // we need this global because if only one card is enabled
 // we'd like the thread for that card to use that card for timesync
@@ -48,6 +49,10 @@ int g_enabled_cards = 0;
 TimeSync 	g_ts(SRATE_HZ); //keeps track of ticks (TDT time)
 bool		s_interrupted = false;
 bool		g_running = false;
+
+lockfile g_lf("/tmp/po8e.lock");
+
+std::vector <void *> g_socks;
 
 static void s_signal_handler(int)
 {
@@ -67,6 +72,20 @@ static void s_catch_signals(void)
 	sigaction(SIGTERM, &action, NULL);
 }
 
+static void die(void *ctx, int status)
+{
+	s_interrupted = true;
+	g_running = false;
+	printf("\n");
+	for (auto &sock : g_socks) {
+		zmq_close(sock);
+	}
+	zmq_ctx_term(ctx);
+	g_lf.unlock();
+	exit(status);
+}
+
+
 // service the po8e buffer
 void po8e_thread(void *ctx, PO8e *p, int id)
 {
@@ -76,12 +95,12 @@ void po8e_thread(void *ctx, PO8e *p, int id)
 		error("zmq: could not create socket");
 		return;
 	}
+	g_socks.push_back(socket);
 
 	std::stringstream ss;
 	ss << "inproc://po8e-" << id;
 	if (zmq_bind(socket, ss.str().c_str()) != 0) {
 		error("zmq: could not bind to socket");
-		zmq_close(socket);
 		return;
 	}
 
@@ -98,7 +117,6 @@ void po8e_thread(void *ctx, PO8e *p, int id)
 		p->stopCollecting();
 		debug("Releasing card %p", (void *)p);
 		PO8e::releaseCard(p);
-		zmq_close(socket);
 		return;
 	}
 
@@ -211,8 +229,6 @@ void po8e_thread(void *ctx, PO8e *p, int id)
 		debug("Releasing card %p", (void *)p);
 		PO8e::releaseCard(p);
 	}
-
-	zmq_close(socket);
 }
 
 void worker(void *ctx, vector<po8e::card *> &cards)
@@ -222,6 +238,9 @@ void worker(void *ctx, vector<po8e::card *> &cards)
 
 	int n = cards.size();
 
+	// in this thread we create a socket per po8e card
+	// keep track of these in our own local socks vector
+	// rather than in g_socks.
 	vector<void *> socks;
 	vector<zmq_pollitem_t> items;
 	for (int i=0; i<n; i++) {
@@ -236,6 +255,7 @@ void worker(void *ctx, vector<po8e::card *> &cards)
 
 	// for control input
 	void *controller = zmq_socket(ctx, ZMQ_SUB);
+	g_socks.push_back(controller);
 	zmq_connect(controller, "inproc://controller");
 	zmq_setsockopt(controller, ZMQ_SUBSCRIBE, "", 0);
 	zmq_pollitem_t p = {controller, 0, ZMQ_POLLIN, 0};
@@ -243,10 +263,12 @@ void worker(void *ctx, vector<po8e::card *> &cards)
 
 	int wm = 2048; // high watermark (messages)
 	void *neural_sock = zmq_socket(ctx, ZMQ_PUB);	// we will publish neural data
+	g_socks.push_back(neural_sock);
 	zmq_setsockopt(neural_sock, ZMQ_SNDHWM, &wm, sizeof(wm));
 	zmq_bind(neural_sock, g_po8e_neural_socket_name.c_str());
 
 	void *events_sock = zmq_socket(ctx, ZMQ_PUB);	// we will publish events data
+	g_socks.push_back(events_sock);
 	zmq_setsockopt(events_sock, ZMQ_SNDHWM, &wm, sizeof(wm));
 	zmq_bind(events_sock, g_po8e_events_socket_name.c_str());
 
@@ -394,12 +416,68 @@ void worker(void *ctx, vector<po8e::card *> &cards)
 
 	}
 
-	zmq_close(events_sock);
-	zmq_close(neural_sock);
-	zmq_close(controller);
-
 	for (auto &sock : socks) {
 		zmq_close(sock);
+	}
+
+}
+
+void time_thread(void *ctx)
+{
+	// for time queries
+	void *timer = zmq_socket(ctx, ZMQ_REP);
+	g_socks.push_back(timer);
+	zmq_bind(timer, g_po8e_time_socket_name.c_str());
+
+	// for control input (KILL, etc)
+	void *controller = zmq_socket(ctx, ZMQ_SUB);
+	g_socks.push_back(controller);
+	zmq_connect(controller, "inproc://controller");
+	zmq_setsockopt(controller, ZMQ_SUBSCRIBE, "", 0);
+
+	zmq_pollitem_t items [] = {
+		{ timer, 		0, ZMQ_POLLIN, 0 },
+		{ controller, 	0, ZMQ_POLLIN, 0 }
+	};
+
+	// nb we must not assume that the string is null terminated!
+	auto isCommand = [](zmq_msg_t *m, const char *c) {
+		return strncmp((char *)zmq_msg_data(m), c, zmq_msg_size(m)) == 0;
+	};
+
+	while (true) {
+		if (zmq_poll(items, 2, -1) == -1) { //  -1 means block
+			break;
+		}
+
+		if (items[0].revents & ZMQ_POLLIN) {
+
+			zmq_msg_t msg;
+			zmq_msg_init(&msg);
+			zmq_msg_recv(&msg, timer, 0);
+
+			if (isCommand(&msg, "TICK2TIME")) {
+				zmq_msg_close(&msg);
+				zmq_msg_init(&msg);
+				zmq_msg_recv(&msg, timer, 0);
+				double tk;
+				memcpy(&tk, (double *)zmq_msg_data(&msg), sizeof(double));
+				long double ts = g_ts.getTime(tk);
+				zmq_send(timer, &ts, sizeof(ts), 0);
+			} else if (isCommand(&msg, "NOW")) {
+				double tk = (double) g_ts.getTicks();
+				long double ts = g_ts.getTime(tk);
+				zmq_send(timer, &ts, sizeof(ts), ZMQ_SNDMORE);
+				zmq_send(timer, &tk, sizeof(tk), 0);
+			} else {
+				zmq_send(timer, "ERR", 3, 0);
+			}
+			zmq_msg_close(&msg);
+		}
+
+		if (items[1].revents & ZMQ_POLLIN) {
+			break;	// ie KILL
+		}
 	}
 
 }
@@ -411,8 +489,6 @@ int main(int argc, char *argv[])
 	printf("po8e\n");
 	printf("usage: po8e [config file]\n\n");
 
-	s_catch_signals();
-
 	g_startTime = gettime();
 	time_t t_start;
 	time(&t_start);
@@ -420,8 +496,7 @@ int main(int argc, char *argv[])
 	strftime(session_start_time, sizeof(session_start_time),
 	         "%FT%TZ", gmtime(&t_start));
 
-	lockfile lf("/tmp/po8e.lock");
-	if (lf.lock()) {
+	if (g_lf.lock()) {
 		error("executable already running");
 		return 1;
 	}
@@ -430,6 +505,7 @@ int main(int argc, char *argv[])
 	po8eConf pc;
 	if (!pc.loadConf(rc)) {
 		error("No config file! Aborting!");
+		g_lf.unlock();
 		return 1;
 	}
 
@@ -438,6 +514,9 @@ int main(int argc, char *argv[])
 
 	pc.querySocketName(g_po8e_query_socket_name);
 	printf("po8e query socket:\t%s\n", 	g_po8e_query_socket_name.c_str());
+
+	pc.timeSocketName(g_po8e_time_socket_name);
+	printf("po8e time socket:\t%s\n", 	g_po8e_time_socket_name.c_str());
 
 	pc.neuralSocketName(g_po8e_neural_socket_name);
 	printf("po8e neural socket:\t%s\n", g_po8e_neural_socket_name.c_str());
@@ -453,51 +532,49 @@ int main(int argc, char *argv[])
 
 	if (nc == 0) {
 		error("No neural channels configured!");
+		g_lf.unlock();
 		return 1;
 	}
 
 	printf("\n");
 
+	s_catch_signals();
+
 	void *zcontext = zmq_ctx_new();
 	if (zcontext == NULL) {
 		error("zmq: could not create context");
+		g_lf.unlock();
 		return 1;
 	}
 
 	// we don't need 1024 sockets
 	if (zmq_ctx_set(zcontext, ZMQ_MAX_SOCKETS, 64) != 0) {
 		error("zmq: could not set max sockets");
-		return 1;
+		die(zcontext, 1);
 	}
 
 	void *controller = zmq_socket(zcontext, ZMQ_PUB);
 	if (controller == NULL) {
 		error("zmq: could not create socket");
-		zmq_ctx_term(zcontext);
-		return 1;
+		die(zcontext, 1);
 	}
+	g_socks.push_back(controller);
 
 	if (zmq_bind(controller, "inproc://controller") != 0) {
 		error("zmq: could not bind to socket");
-		zmq_close(controller);
-		zmq_ctx_term(zcontext);
-		return 1;
+		die(zcontext, 1);
 	}
 
 	void *query = zmq_socket(zcontext, ZMQ_REP);
-	if (controller == NULL) {
+	if (query == NULL) {
 		error("zmq: could not create socket");
-		zmq_close(controller);
-		zmq_ctx_term(zcontext);
-		return 1;
+		die(zcontext, 1);
 	}
+	g_socks.push_back(query);
 
 	if (zmq_bind(query, g_po8e_query_socket_name.c_str()) != 0) {
 		error("zmq: could not bind to socket");
-		zmq_close(query);
-		zmq_close(controller);
-		zmq_ctx_term(zcontext);
-		return 1;
+		die(zcontext, 1);
 	}
 
 	vector <thread> threads;
@@ -556,7 +633,7 @@ int main(int argc, char *argv[])
 
 	if (threads.size() < 1) {
 		error("Connected to zero po8e cards");
-		return 1;
+		die(zcontext, 1);
 	}
 
 	std::vector<std::string> neural_name;
@@ -576,6 +653,7 @@ int main(int argc, char *argv[])
 	}
 
 	threads.push_back(thread(worker, zcontext, std::ref(cards)));
+	threads.push_back(thread(time_thread, zcontext));
 
 	zmq_pollitem_t items [] = {
 		{ query, 0, ZMQ_POLLIN, 0 },
@@ -647,7 +725,7 @@ int main(int argc, char *argv[])
 		}
 
 		if (g_running) {
-			printf("ts %s ", g_ts.getTime().c_str());
+			printf("ts %s ", g_ts.getTimeString().c_str());
 			printf("| tk %d ", g_ts.getTicks());
 			printf("| sl %0.3Lf ", g_ts.m_slope);
 			printf("| os %0.1Lf ", g_ts.m_offset);
@@ -662,9 +740,5 @@ int main(int argc, char *argv[])
 		thread.join();
 	}
 
-	zmq_close(query);
-	zmq_close(controller);
-	zmq_ctx_term(zcontext);
-
-	lf.unlock();
+	die(zcontext, 0);
 }
