@@ -18,7 +18,7 @@ OBJS = noop.cpp latency_test.cpp
 : foreach $(OBJS) |> !cpp |> %B.o
 
 CPPFLAGS += `pkg-config --cflags luajit libxdg-basedir`
-OBJS = notch.cpp bp.cpp lfp.cpp pulser.cpp
+OBJS = notch.cpp bp.cpp lfp.cpp pulser.cpp p1.cpp
 : foreach $(OBJS) |> !cpp |> %B.o
 
 : po8e_conf.cpp | ../proto/po8e.pb.h |> !cpp |> %B.o

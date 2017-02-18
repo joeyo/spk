@@ -23,6 +23,8 @@ lib/lconf.o \
 lib/random.o \
 lib/util.o |> !ld |> bin/pulser
 
+: src/p1.o lib/lconf.o lib/random.o lib/util.o |> !ld |> bin/p1
+
 LDFLAGS += `pkg-config --libs uuid luajit protobuf`
 LDFLAGS += -lPO8eStreaming
 
