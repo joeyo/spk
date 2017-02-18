@@ -6,7 +6,6 @@
 po8e = {}
 po8e.read_size = 16 -- samples
 po8e.query_socket = "tcp://*:1337"
-po8e.time_socket = "tcp://*:1338"
 po8e.neural_socket = "tcp://*:2000"
 po8e.events_socket = "tcp://*:3000"
 
@@ -41,7 +40,8 @@ channels = {}
 for i=1, 96 do
   channel = {
     id = i,
-    name = string.format("%s %03d", "S1", i),
+    name = string.format("%s %03d", "STIM", i),
+    scale_factor = 3276700,
     data_type = NEURAL
   }
   channels[i] = channel
@@ -57,7 +57,7 @@ channels[98].id = 98
 channels[98].name = "current"
 channels[98].data_type = EVENTS
 
-for i=99, 100 do
+for i=99, 116 do
   channel = {
     id = i,
     data_type = IGNORE
