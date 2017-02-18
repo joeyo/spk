@@ -1282,6 +1282,10 @@ void gks_binner()
 
 	printf("Gaussian Kernel Smoother Binner, ");
 	auto nc = g_ks.size();
+
+	// XXXXXXXX FIX ME
+	// WHY IS THIS 960 RATHER THAN 96 OR 192???!?!?!?
+
 	printf("%lu features\n", nc);
 	size_t length = nc*sizeof(u16);
 	auto mmh = new mmapHelp(length, g_gks_mmap.c_str());
