@@ -10,6 +10,7 @@
 *.o
 *.xml
 *.tup/
+bin/
 spk
 noop
 po8e
