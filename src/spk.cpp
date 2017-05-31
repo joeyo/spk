@@ -1762,7 +1762,7 @@ int main(int argc, char **argv)
 
 	g_tsc = new TimeSyncClient(); //tells us the ticks when things happen.
 
-	string verstr = "v2.60";
+	string verstr = "v2.70";
 
 	string titlestr = "spk ";
 	titlestr += verstr;

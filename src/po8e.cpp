@@ -486,7 +486,9 @@ int main(int argc, char *argv[])
 {
 	std::string rc  = argc > 1 ? argv[1] : "po8e.rc";
 
-	printf("po8e\n");
+	string verstr = "v2.70";
+
+	printf("po8e %s\n", verstr.c_str());
 	printf("usage: po8e [config file]\n\n");
 
 	g_startTime = gettime();
