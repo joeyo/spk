@@ -86,6 +86,7 @@ using namespace std;
 using namespace arma;
 
 uuid_t	g_uuid;
+char 	g_sess_start_t[sizeof("YYYY-MM-DDTHH:MM:SSZ")];
 
 char	g_prefstr[256];
 
@@ -1703,10 +1704,22 @@ static void openSaveSpikesFile(GtkWidget *, gpointer parent_window)
 			strncpy(&name[i*max_str], g_c[i]->m_chanName.c_str(),
 			        g_c[i]->m_chanName.size());
 		}
+
 		g_spikewriter.setVersion();
+
 		char uuid[37];
 		uuid_unparse(g_uuid, uuid);
 		g_spikewriter.setUUID(uuid);
+
+		time_t t_create;
+		time(&t_create);
+		char create_date[sizeof("YYYY-MM-DDTHH:MM:SSZ")];
+		strftime(create_date, sizeof(create_date), "%FT%TZ", gmtime(&t_create));
+
+		g_spikewriter.setFileCreateDate(create_date);
+		g_spikewriter.setSessionStartTime(g_sess_start_t);
+		g_spikewriter.setSessionDescription("spike data");
+
 		g_spikewriter.setMetaData(g_sr, name, max_str);
 		delete[] name;
 		g_spikewriter.addDeviceDescription("RZ2", "TDT RZ2 BioAmp Processor");
@@ -1908,6 +1921,13 @@ int main(int argc, char **argv)
 		die(zcontext, 1);
 	}
 
+	zmq_send(query_sock, "START_TIME", 10, 0);
+	if (zmq_recv(query_sock, g_sess_start_t, sizeof(g_sess_start_t), 0) == -1) {
+		error("zmq: could not recv from query sock");
+		die(zcontext, 1);
+	}
+
+	printf("session start:\t\t%s\n", 	g_sess_start_t);
 	printf("neural channels:\t%zu\n", 	nnc);
 	printf("events channels:\t%zu\n", 	nec);
 	printf("analog channels:\t%zu\n", 	nac);
