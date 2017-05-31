@@ -217,7 +217,7 @@ void H5Writer::setUUID(char *uuid_str)
 void H5Writer::setVersion()
 {
 	// set the NWB version
-	const char *str = "NWB-1.0.5_beta";
+	const char *str = "NWB-1.0.6";
 
 	hid_t ds = H5Screate(H5S_SCALAR);
 	hid_t dtype = H5Tcopy (H5T_C_S1);
@@ -247,9 +247,8 @@ void H5Writer::setFileCreateDate(char *str)
 }
 void H5Writer::setSessionStartTime(char *str)
 {
-	hsize_t dims = 1;
-	hid_t ds = H5Screate_simple(1, &dims, NULL);
-	hid_t dtype = H5Tcopy(H5T_C_S1);
+	hid_t ds = H5Screate(H5S_SCALAR);
+	hid_t dtype = H5Tcopy (H5T_C_S1);
 	H5Tset_size(dtype, strlen(str));
 	H5Tset_strpad(dtype, H5T_STR_NULLTERM);
 	hid_t dset = H5Dcreate(m_h5file, "/session_start_time", dtype, ds,
