@@ -1,11 +1,12 @@
 # spk
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.801891.svg)](https://doi.org/10.5281/zenodo.801891)
+
 This is infrastructure for distributed online multielectrode
 electrophysiology. It is forked from [myopen] and is licensed
 under the GPL v3.
 
 ![spk screenshot](https://raw.githubusercontent.com/joeyo/spk/master/etc/spk.png)
-
 
 ## Dependencies
 
