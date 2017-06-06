@@ -65,16 +65,17 @@ bool H5AnalogWriter::open(const char *fn, size_t nc)
 	// Online advice is to, "keep chunks above 10KiB or so"
 	// Realistically it should probably be something that can fit into L1 cache
 	// so: definitely under 64 KB
-	// 32*32*2 bytes ~= 2 KB
-	// 32*128*2 bytes ~= 8 KB
-	// 32*256*2 bytes ~= 8 KB
+	// 32*32*2 bytes  ~=  2 KB
+	// 32*128*2 bytes ~=  8 KB
+	// 32*256*2 bytes ~= 16 KB
+	// 32*512*2 bytes ~= 32 KB
 	// also, perhaps compression will work better with slightly larger blocks
 	hid_t prop = H5Pcreate(H5P_DATASET_CREATE);
 	if (m_shuffle)
 		shuffleDataset(prop);
 	if (m_deflate)
 		deflateDataset(prop);
-	hsize_t chunk_dims[2] = {256, nc < 32 ? nc : 32};
+	hsize_t chunk_dims[2] = {512, nc < 32 ? nc : 32};
 	H5Pset_chunk(prop, 2, chunk_dims);
 	// Create the broadband dataset
 	m_h5Dsamples = H5Dcreate(m_h5file, "/acquisition/timeseries/broadband/data",
@@ -102,7 +103,7 @@ bool H5AnalogWriter::open(const char *fn, size_t nc)
 		shuffleDataset(prop);
 	if (m_deflate)
 		deflateDataset(prop);
-	chunk_dims[0] = 256;
+	chunk_dims[0] = 512;
 	H5Pset_chunk(prop, 1, chunk_dims);
 	// Create the tick dataset
 	m_h5Dtk = H5Dcreate(m_h5file, "/acquisition/timeseries/broadband/sync/ticks",
@@ -130,7 +131,7 @@ bool H5AnalogWriter::open(const char *fn, size_t nc)
 		shuffleDataset(prop);
 	if (m_deflate)
 		deflateDataset(prop);
-	chunk_dims[0] = 256;
+	chunk_dims[0] = 512;
 	H5Pset_chunk(prop, 1, chunk_dims);
 	// Create the timestamps dataset
 	m_h5Dts = H5Dcreate(m_h5file, "/acquisition/timeseries/broadband/timestamps",

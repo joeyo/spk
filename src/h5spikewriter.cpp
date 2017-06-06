@@ -80,7 +80,7 @@ bool H5SpikeWriter::open(const char *fn, size_t nc, size_t nu, size_t nwf)
 				shuffleDataset(prop);
 			if (m_deflate)
 				deflateDataset(prop);
-			chunk_dims[0] = 128;
+			chunk_dims[0] = 512;
 			H5Pset_chunk(prop, 1, chunk_dims);
 			sprintf(buf, "/acquisition/Spikes/Chan%zu/Unit%zu/Ticks", i, j);
 			dset = H5Dcreate(m_h5file, buf, H5T_STD_I64LE,
@@ -106,7 +106,7 @@ bool H5SpikeWriter::open(const char *fn, size_t nc, size_t nu, size_t nwf)
 				shuffleDataset(prop);
 			if (m_deflate)
 				deflateDataset(prop);
-			chunk_dims[0] = 128;
+			chunk_dims[0] = 512;
 			H5Pset_chunk(prop, 1, chunk_dims);
 			sprintf(buf, "/acquisition/Spikes/Chan%zu/Unit%zu/Timestamps", i, j);
 			dset = H5Dcreate(m_h5file, buf, H5T_IEEE_F64LE,
@@ -135,7 +135,7 @@ bool H5SpikeWriter::open(const char *fn, size_t nc, size_t nu, size_t nwf)
 			if (m_deflate)
 				deflateDataset(prop);
 			chunk_dims[0] = nwf;
-			chunk_dims[1] = 128;
+			chunk_dims[1] = 512;
 			H5Pset_chunk(prop, 2, chunk_dims);
 			sprintf(buf, "/acquisition/Spikes/Chan%zu/Unit%zu/Waveforms", i, j);
 			dset = H5Dcreate(m_h5file, buf, H5T_IEEE_F32LE,
