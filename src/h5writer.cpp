@@ -245,8 +245,8 @@ void H5Writer::setFileCreateDate(char *str)
 		shuffleDataset(prop);
 	if (m_deflate)
 		deflateDataset(prop);
-	hsize_t chunk_dims = 1;
-	H5Pset_chunk(prop, 8, &chunk_dims);
+	hsize_t chunk_dims = 8;
+	H5Pset_chunk(prop, 1, &chunk_dims);
 
 	hid_t dset = H5Dcreate(m_h5file, "/file_create_date",
 		dtype, ds, H5P_DEFAULT, prop, H5P_DEFAULT);
