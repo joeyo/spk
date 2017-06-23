@@ -232,16 +232,29 @@ void H5Writer::setVersion()
 }
 void H5Writer::setFileCreateDate(char *str)
 {
+	hsize_t init_dims = 1;
+	hsize_t max_dims = H5S_UNLIMITED;
+	hid_t ds = H5Screate_simple(1, &init_dims, &max_dims);
 
-	hsize_t dims = 1;
-	hid_t ds = H5Screate_simple(1, &dims, NULL);
 	hid_t dtype = H5Tcopy(H5T_C_S1);
 	H5Tset_size(dtype, strlen(str));
 	H5Tset_strpad(dtype, H5T_STR_NULLTERM);
-	hid_t dset = H5Dcreate(m_h5file, "/file_create_date", dtype, ds,
-	                       H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+	hid_t prop = H5Pcreate(H5P_DATASET_CREATE);
+	if (m_shuffle)
+		shuffleDataset(prop);
+	if (m_deflate)
+		deflateDataset(prop);
+	hsize_t chunk_dims = 1;
+	H5Pset_chunk(prop, 8, &chunk_dims);
+
+	hid_t dset = H5Dcreate(m_h5file, "/file_create_date",
+		dtype, ds, H5P_DEFAULT, prop, H5P_DEFAULT);
+
 	H5Dwrite(dset, dtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, str);
+
 	H5Dclose(dset);
+	H5Pclose(prop);
 	H5Tclose(dtype);
 	H5Sclose(ds);
 }
