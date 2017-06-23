@@ -25,6 +25,7 @@ public:
 	size_t readSize();
 	void neuralSocketName(std::string &s);
 	void eventsSocketName(std::string &s);
+	void analogSocketName(std::string &s);
 	void querySocketName(std::string &s);
 	void timeSocketName(std::string &s);
 protected:

@@ -38,6 +38,7 @@ mutex g_po8e_mutex;
 size_t g_po8e_read_size = 16; // po8e block read size
 string g_po8e_neural_socket_name = "ipc:///tmp/broadband.zmq";
 string g_po8e_events_socket_name = "ipc:///tmp/events.zmq";
+string g_po8e_analog_socket_name = "ipc:///tmp/analog.zmq";
 string g_po8e_query_socket_name = "ipc:///tmp/query.zmq";
 string g_po8e_time_socket_name = "ipc:///tmp/time.zmq";
 
@@ -272,8 +273,14 @@ void worker(void *ctx, vector<po8e::card *> &cards)
 	zmq_setsockopt(events_sock, ZMQ_SNDHWM, &wm, sizeof(wm));
 	zmq_bind(events_sock, g_po8e_events_socket_name.c_str());
 
+	void *analog_sock = zmq_socket(ctx, ZMQ_PUB);	// we will publish analog data
+	g_socks.push_back(analog_sock);
+	zmq_setsockopt(analog_sock, ZMQ_SNDHWM, &wm, sizeof(wm));
+	zmq_bind(analog_sock, g_po8e_analog_socket_name.c_str());
+
 	u64 nnc = 0; // num neural channels
 	u64 nec = 0; // num events channels
+	u64 nac = 0; // num analog channels
 	for (auto &c : cards) {
 		for (int j=0; j<c->channel_size(); j++) {
 			switch (c->channel(j).data_type()) {
@@ -284,6 +291,7 @@ void worker(void *ctx, vector<po8e::card *> &cards)
 				nec++;
 				break;
 			case po8e::channel::ANALOG:
+				nac++;
 				break;
 			case po8e::channel::IGNORE:
 				break;
@@ -354,11 +362,13 @@ void worker(void *ctx, vector<po8e::card *> &cards)
 				break;
 			}
 
-			// package up neural data and event here
+			// package up neural, event and analog data here
 			auto neural = new float[nnc * ns[0]];
 			auto events = new i16[nec * ns[0]];
+			auto analog = new float[nac * ns[0]];
 			size_t nc_i = 0;
 			size_t ne_i = 0;
+			size_t na_i = 0;
 			for (int i=0; i<(int)cards.size(); i++) {
 				for (int j=0; j<cards[i]->channel_size(); j++) {
 					switch (cards[i]->channel(j).data_type()) {
@@ -375,6 +385,11 @@ void worker(void *ctx, vector<po8e::card *> &cards)
 						ne_i++;
 						break;
 					case po8e::channel::ANALOG:
+						for (size_t k=0; k<ns[0]; k++) {
+							analog[na_i*ns[0]+k] = (float)data[i][j*ns[0]+k];
+							analog[na_i*ns[0]+k] /= cards[i]->channel(j).scale_factor();
+						}
+						na_i++;
 						break;
 					case po8e::channel::IGNORE:
 						break;
@@ -396,8 +411,15 @@ void worker(void *ctx, vector<po8e::card *> &cards)
 			zmq_send(events_sock, (void *)&h, sizeof(h), ZMQ_SNDMORE);
 			zmq_send(events_sock, (void *)events, nec*ns[0]*sizeof(i16), 0);
 
+			// send analog data
+			// reuse the neural header
+			h.nc = nac;
+			zmq_send(analog_sock, (void *)&h, sizeof(h), ZMQ_SNDMORE);
+			zmq_send(analog_sock, (void *)analog, nac*ns[0]*sizeof(float), 0);
+
 			delete[] neural;
 			delete[] events;
+			delete[] analog;
 
 			for (auto &x : data) {
 				delete[] x;
@@ -526,6 +548,9 @@ int main(int argc, char *argv[])
 	pc.eventsSocketName(g_po8e_events_socket_name);
 	printf("po8e events socket:\t%s\n", g_po8e_events_socket_name.c_str());
 
+	pc.analogSocketName(g_po8e_analog_socket_name);
+	printf("po8e analog socket:\t%s\n", g_po8e_analog_socket_name.c_str());
+
 	size_t nc = pc.numNeuralChannels();
 	printf("Neural channels:\t%zu\n", 	nc);
 	printf("Event channels:\t\t%zu\n", 	pc.numEventsChannels());
@@ -640,6 +665,7 @@ int main(int argc, char *argv[])
 
 	std::vector<std::string> neural_name;
 	std::vector<std::string> event_name;
+	std::vector<std::string> analog_name;
 
 	for (auto &c : cards) {
 		if (c->enabled()) {
@@ -649,6 +675,9 @@ int main(int argc, char *argv[])
 				}
 				if (c->channel(j).data_type() == po8e::channel::EVENTS) {
 					event_name.push_back(c->channel(j).name());
+				}
+				if (c->channel(j).data_type() == po8e::channel::ANALOG) {
+					analog_name.push_back(c->channel(j).name());
 				}
 			}
 		}
@@ -714,6 +743,21 @@ int main(int argc, char *argv[])
 				zmq_msg_recv(&msg, query, 0); // get sub-command
 				if (isCommand(&msg, "NAME")) {
 					std::string s = event_name[ch];
+					zmq_send(query, s.c_str(), s.size(), 0);
+				} else {
+					zmq_send(query, "ERR", 3, 0);
+				}
+			} else if (isCommand(&msg, "AC")) {
+				zmq_msg_close(&msg);
+				zmq_msg_init(&msg);
+				zmq_msg_recv(&msg, query, 0); // get the channel number (zero-indexed)
+				u64 ch;
+				memcpy(&ch, (u64 *)zmq_msg_data(&msg), sizeof(u64));
+				zmq_msg_close(&msg);
+				zmq_msg_init(&msg);
+				zmq_msg_recv(&msg, query, 0); // get sub-command
+				if (isCommand(&msg, "NAME")) {
+					std::string s = analog_name[ch];
 					zmq_send(query, s.c_str(), s.size(), 0);
 				} else {
 					zmq_send(query, "ERR", 3, 0);

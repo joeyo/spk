@@ -82,6 +82,10 @@ void po8eConf::eventsSocketName(std::string &s)
 {
 	getString("po8e.events_socket", s); // s unchanged on error
 }
+void po8eConf::analogSocketName(std::string &s)
+{
+	getString("po8e.analog_socket", s); // s unchanged on error
+}
 void po8eConf::querySocketName(std::string &s)
 {
 	getString("po8e.query_socket", s); // s unchanged on error
