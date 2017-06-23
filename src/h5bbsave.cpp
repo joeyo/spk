@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 	for (auto &x : names) {
 		max_str = max_str > x.size() ? max_str : x.size();
 	}
-	auto name = new char[max_str*names.size()];
+	auto name = new char[max_str*names.size()]();
 	for (size_t i=0; i<names.size(); i++) {
 		strncpy(&name[i*max_str], names[i].c_str(), names[i].size());
 	}

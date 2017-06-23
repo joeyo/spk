@@ -281,15 +281,18 @@ bool H5AnalogWriter::setMetaData(float scale, char *name, size_t slen)
 	for (auto &x : ancestry) {
 		max_str = max_str > x.size() ? max_str : x.size();
 	}
-	auto ss = new char[max_str*ancestry.size()];
+	auto ss = new char[max_str*ancestry.size()]();
 	for (size_t i=0; i<ancestry.size(); i++) {
 		strncpy(&ss[i*max_str], ancestry[i].c_str(), ancestry[i].size());
 	}
 	dims = ancestry.size();
+
 	ds = H5Screate_simple(1, &dims, NULL);
+
 	atype = H5Tcopy(H5T_C_S1);
 	H5Tset_size(atype, max_str);
 	H5Tset_strpad(atype, H5T_STR_NULLTERM);
+
 	attr = H5Acreate_by_name(m_h5file,
 	                         "/acquisition/timeseries/broadband", "ancestry",
 	                         atype, ds, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
