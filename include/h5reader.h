@@ -15,9 +15,6 @@ class H5Reader
 protected:
 	string 			m_fn; 			// the file name
 	hid_t 			m_h5file;		// the h5 file
-	vector<hid_t>	m_h5groups;		// for the groups
-	vector<hid_t>	m_h5dataspaces;	// [ containers for the datapsaces
-	vector<hid_t> 	m_h5props;		// [ and the chunk properties
 	
 public:
 	H5Reader();
@@ -35,15 +32,9 @@ public:
 
 	string getUUID();
 
-	//virtual void getVersion();
+	string getVersion();
 
-	//void getFileCreateDate(char *str);
-
-	//void getSessionStartTime(char *str);
-
-	//void getSessionDescription(const char *str);
-
-	//void getDeviceDescription(const char *name, const char *desc);
+	string getSessionStartTime();
 
 	//virtual const char *name() = 0; // set in child class
 
@@ -51,6 +42,9 @@ public:
 	{
 		return "H5 Broadband Reader v1.0";
 	};
+
+protected:
+	string getScalarStringDataSet(const char *str);
 
 };
 

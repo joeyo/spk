@@ -61,9 +61,13 @@ int main(int argc, char *argv[])
 	H5Reader h5;
 	h5.open(fn.c_str());
 
+	std::string ver = h5.getVersion();
 	std::string uuid = h5.getUUID();
-
+	std::string t_start = h5.getSessionStartTime();
+	
+	printf("NWB Version: %s\n", ver.c_str());
 	printf("UUID: %s\n", uuid.c_str());
+	printf("Session Start Time: %s\n", t_start.c_str());
 
 /*
 	xdgHandle xdg;
