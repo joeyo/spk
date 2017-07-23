@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 
 	zmq_msg_t bbh, evh;
 	zmq_msg_t bb_body, ev_body;
-	size_t nbh, neh;
+	size_t nbh;
 	zmq_packet_header *bbp, *evp;
 	size_t nb;
 	float *f;
@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
 			if (get_ev) {
 				zmq_msg_init(&evh);
 				zmq_msg_recv(&evh, socket_ev, 0);
-				neh = zmq_msg_size(&evh);
+				//size_t neh = zmq_msg_size(&evh);
 				evp = (zmq_packet_header *)zmq_msg_data(&evh);
 
 				if (evp->tk - evtick_last != evp->ns && evtick_last != 0) {
