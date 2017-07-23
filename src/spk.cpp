@@ -1458,6 +1458,7 @@ static GtkWidget *mk_radio(const char *txt, int ntxt,
 
 	char buf[256];
 	strncpy(buf, txt, 256);
+	buf[255] = '\0';
 	char *a = strtok(buf, ",");
 
 	button = gtk_radio_button_new_with_label (nullptr, (const char *)a );
@@ -1525,7 +1526,7 @@ static GtkWidget *mk_combobox(const char *txt, int ntxt, GtkWidget *container,
 
 	char buf[256];
 	strncpy(buf, txt, 256);
-
+	buf[255] = '\0';
 	char *a = strtok(buf, ",");
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), (const char *)a);
 
