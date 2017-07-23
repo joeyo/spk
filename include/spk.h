@@ -31,6 +31,7 @@ enum MODES { // ui tabs
 #define NSORT		4
 #define NUNIT		(NSORT+1)	// including unsorted (parens are important!)
 
+#define NUMPC		2			// number of PCs to use for clustering
 
 typedef struct PO8Data {
 	i64 tick;	// this is the tick for the first sample
