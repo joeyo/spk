@@ -1,6 +1,6 @@
 # spk
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.801891.svg)](https://doi.org/10.5281/zenodo.801891)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.801890.svg)](https://doi.org/10.5281/zenodo.801890)
 
 This is infrastructure for distributed online multielectrode
 electrophysiology. It is published under the [MIT license][mit].
