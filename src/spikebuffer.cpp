@@ -28,10 +28,8 @@ float NEO::mean()
 	return m_stats.mean();
 }
 
-SpikeBuffer::SpikeBuffer()
+SpikeBuffer::SpikeBuffer() : m_w(0), m_r(0)
 {
-	m_w = 0;
-	m_r = 0;
 }
 
 SpikeBuffer::~SpikeBuffer()

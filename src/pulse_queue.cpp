@@ -74,7 +74,7 @@ std::vector<int> PulseQueue::step()
 	std::vector<int> pulses;
 
 	// do i need to pulse and can i?
-	if (pulseQ.size() > 0 && (t-tlast) > pulseDT) {
+	if (!pulseQ.empty() && (t-tlast) > pulseDT) {
 		for (int i=0; i<std::min((int)pulseQ.size(), numSimultaneous); i++) {
 			pulses.push_back(pulseQ.front());
 			pulseQ.pop();

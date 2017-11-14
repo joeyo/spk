@@ -37,8 +37,8 @@ public:
 	Vbo		*m_wfVbo; 				// range 1 mean 0
 	Vbo		*m_usVbo;				// unsorted units
 	VboPca	*m_pcaVbo; 				// 2D points, with color.
-	float	m_pca[2][NWFSAMP]; 	// range 1 mean 0
-	float 	m_pcaScl[2]; 		// sqrt of the eigenvalues.
+	float	m_pca[NUMPC][NWFSAMP]; 	// range 1 mean 0
+	float 	m_pcaScl[NUMPC]; 		// sqrt of the eigenvalues.
 	float	m_template[NSORT][NWFSAMP]; // range 1 mean 0.
 	float	m_loc[4];
 	int		m_ch; 			//channel number, obvi.
@@ -64,13 +64,12 @@ public:
 		m_wfstats.reset();
 		m_enabled = true;
 
-		for (int j=0; j<NWFSAMP; j++) {
-			// only need first two pc's
-			m_pca[0][j] = 1.f/8.f;
-			m_pca[1][j] = 1.f/8.f;
+		for (int i=0; i<NUMPC; i++) {
+			for (int j=0; j<NWFSAMP; j++) {
+				m_pca[i][j] = 1.f/8.f;
+			}
+			m_pcaScl[i] = 1.f;
 		}
-		m_pcaScl[0] = 1.f;
-		m_pcaScl[1] = 1.f;
 
 		for (int k=0; k<NSORT; k++) {
 			for (int j=0; j<NWFSAMP; j++) {
@@ -81,9 +80,10 @@ public:
 
 		//read from matlab if it's there..
 		if (ms) {
-			ms->getValue3(ch, 0, "pca", &(m_pca[0][0]), NWFSAMP);
-			ms->getValue3(ch, 1, "pca", &(m_pca[1][0]), NWFSAMP);
-			ms->getValue3(ch, 0, "pcaScl", m_pcaScl, 2);
+			for (int i=0; i<NUMPC; i++) {
+				ms->getValue3(ch, i, "pca", &(m_pca[i][0]), NWFSAMP);
+			}
+			ms->getValue3(ch, 0, "pcaScl", m_pcaScl, NUMPC);
 			for (int j=0; j<NSORT; j++) {
 				ms->getValue3(ch, j, "template", &(m_template[j][0]), NWFSAMP);
 				m_aperture[j] = ms->getValue2(ch, j, "aperture", 0.f); // old default: 0.003f
@@ -156,11 +156,13 @@ public:
 	void save(MatStor *ms)
 	{
 		for (int j=0; j<NSORT; j++) {
-			ms->setValue3(m_ch, j, "pca", &(m_pca[j][0]), NWFSAMP);
 			ms->setValue3(m_ch, j, "template", &(m_template[j][0]), NWFSAMP);
 			ms->setValue2(m_ch, j, "aperture", m_aperture[j]);
 		}
-		ms->setValue3(m_ch, 0, "pcaScl", m_pcaScl, 2);
+		for (int i=0; i<NUMPC; i++) {
+			ms->setValue3(m_ch, i, "pca", &(m_pca[i][0]), NWFSAMP);
+		}
+		ms->setValue3(m_ch, 0, "pcaScl", m_pcaScl, NUMPC);
 		ms->setValue(m_ch, "threshold", m_threshold);
 		ms->setValue(m_ch, "centering", m_centering);
 		ms->setValue(m_ch, "gain", m_gain);
@@ -268,7 +270,7 @@ public:
 			//compute PCA. just inner product.
 			// TODO: this seems to be a data race
 			float *pca = m_pcaVbo->addRow();
-			for (int i=0; i<2; i++) {
+			for (int i=0; i<NUMPC; i++) {
 				pca[i] = 0.f;
 				for (int j=0; j<NWFSAMP; j++) {
 					pca[i] += m_pca[i][j] * wf[j];
@@ -543,7 +545,7 @@ public:
 			//and the PCA templates.
 			if (g_showPca) {
 				glLineWidth(5.f);
-				for (int k=0; k<NSORT; k++) {
+				for (int k=0; k<NUMPC; k++) {
 					for (int j=0; j<NWFSAMP; j++) {
 						//float ny = m_pca[k][j]*m_pcaScl[k]*m_gain+0.5;
 						float ny = m_pca[k][j]*m_pcaScl[k]+0.5; // no need to gain?
@@ -776,7 +778,7 @@ public:
 		mat V = fliplr(eigvec);
 
 		// normalize the eigenvectors by the sqrt of the eigenvalues
-		for (int k=0; k<2; k++) {
+		for (int k=0; k<NUMPC; k++) {
 			m_pcaScl[k] = sqrt(d(k));
 			for (int i=0; i<NWFSAMP; i++) {
 				m_pca[k][i] = V(i,k) / m_pcaScl[k];
@@ -786,7 +788,7 @@ public:
 		// recalculate the pca points for immediate display.
 		t = gettime();
 		for (int i=0; i<nsamp; i++) {
-			for (int k=0; k<2; k++) {
+			for (int k=0; k<NUMPC; k++) {
 				float pca = 0;
 				for (int j=0; j<NWFSAMP; j++) {
 					pca += m_pcaVbo->m_wf[i*NWFSAMP + j] * m_pca[k][j];

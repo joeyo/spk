@@ -1448,7 +1448,6 @@ static GtkWidget *mk_radio(const char *txt, int ntxt,
                            const char *frameTxt, int radio_state, GtkCallback cb)
 {
 	GtkWidget *frame, *button, *modebox;
-	GSList *group;
 
 	frame = gtk_frame_new (frameTxt);
 	gtk_box_pack_start (GTK_BOX (container), frame, FALSE, FALSE, 0);
@@ -1459,6 +1458,7 @@ static GtkWidget *mk_radio(const char *txt, int ntxt,
 
 	char buf[256];
 	strncpy(buf, txt, 256);
+	buf[255] = '\0';
 	char *a = strtok(buf, ",");
 
 	button = gtk_radio_button_new_with_label (nullptr, (const char *)a );
@@ -1468,7 +1468,7 @@ static GtkWidget *mk_radio(const char *txt, int ntxt,
 	                  G_CALLBACK(cb), GINT_TO_POINTER(0));
 
 	for (int i=1; i<ntxt; i++) {
-		group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (button));
+		GSList *group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (button));
 		a = strtok(nullptr, ",");
 		button = gtk_radio_button_new_with_label (group, (const char *)a );
 		gtk_toggle_button_set_active(
@@ -1526,7 +1526,7 @@ static GtkWidget *mk_combobox(const char *txt, int ntxt, GtkWidget *container,
 
 	char buf[256];
 	strncpy(buf, txt, 256);
-
+	buf[255] = '\0';
 	char *a = strtok(buf, ",");
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), (const char *)a);
 
@@ -1582,7 +1582,7 @@ static void setWidgetColor(GtkWidget *widget, unsigned char red, unsigned char g
 }
 void renderSortingBlock(GtkWidget *container, int i)
 {
-	GtkWidget *frame, *bx, *bx2;
+	GtkWidget *frame, *bx;
 	char buf[128];
 	snprintf(buf, 128, "%c aperture", 'A'+i);
 	frame = gtk_frame_new (buf);
@@ -1592,7 +1592,7 @@ void renderSortingBlock(GtkWidget *container, int i)
 	gtk_container_add (GTK_CONTAINER(frame), bx);
 
 	for (int j=0; j<NSORT; j++) {
-		bx2 = gtk_hbox_new(FALSE, 1);
+		GtkWidget *bx2 = gtk_hbox_new(FALSE, 1);
 		gtk_container_add(GTK_CONTAINER(bx), bx2);
 
 		u32 bits = 0;

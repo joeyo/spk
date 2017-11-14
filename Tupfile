@@ -26,14 +26,6 @@ lib/util.o |> !ld |> bin/pulser
 : src/p1.o lib/lconf.o lib/random.o lib/util.o |> !ld |> bin/p1
 
 LDFLAGS += `pkg-config --libs uuid luajit protobuf`
-LDFLAGS += -lPO8eStreaming
-
-: src/po8e.o \
-lib/util.o \
-lib/gettime.o \
-lib/lconf.o \
-proto/po8e.pb.o \
-src/po8e_conf.o |> !ld |> bin/po8e
 
 : src/h5bbsave.o \
 lib/util.o \
@@ -85,4 +77,12 @@ src/h5spikewriter.o \
 src/spikebuffer.o \
  |> !ld |> bin/spk
 
+LDFLAGS += -lPO8eStreaming
+
+: src/po8e.o \
+lib/util.o \
+lib/gettime.o \
+lib/lconf.o \
+proto/po8e.pb.o \
+src/po8e_conf.o |> !ld |> bin/po8e
 

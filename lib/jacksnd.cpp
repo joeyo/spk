@@ -229,7 +229,6 @@ void addTones(paTestData *data, long offset)
 
 int jackInit(const char *clientname, int mode)
 {
-	const char *client_name;
 	jack_status_t status;
 
 	g_jackSample = 0;
@@ -249,7 +248,7 @@ int jackInit(const char *clientname, int mode)
 		fprintf (stderr, "JACK server started\n");
 	}
 	if (status & JackNameNotUnique) {
-		client_name = jack_get_client_name(client);
+		const char *client_name = jack_get_client_name(client);
 		fprintf (stderr, "unique name `%s' assigned\n", client_name);
 	}
 

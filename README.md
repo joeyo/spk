@@ -1,10 +1,9 @@
 # spk
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.801891.svg)](https://doi.org/10.5281/zenodo.801891)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.801890.svg)](https://doi.org/10.5281/zenodo.801890)
 
 This is infrastructure for distributed online multielectrode
-electrophysiology. It is forked from [myopen] and is licensed
-under the GPL v3.
+electrophysiology. It is published under the [MIT license][mit].
 
 ![spk screenshot](https://raw.githubusercontent.com/joeyo/spk/master/etc/spk.png)
 
@@ -35,6 +34,7 @@ Install with `make install`.
 [h5]: https://www.hdfgroup.org/HDF5/
 [lua]: https://www.lua.org/
 [luajit]: http://luajit.org/
+[mit]: https://opensource.org/licenses/MIT
 [protobuf]: https://developers.google.com/protocol-buffers/
 [tup]: http://gittup.org/tup/
 [TDT]: http://www.tdt.com/
