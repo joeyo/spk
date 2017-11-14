@@ -1,51 +1,45 @@
-#include <string>
-#include <vector>
+#ifndef INCLUDE_H5READER_H_
+#define INCLUDE_H5READER_H_
 #include <atomic>
 #include <mutex>
+#include <string>
+#include <vector>
 #include "hdf5.h"
-
-#ifndef __H5READER_H__
-#define	__H5READER_H__
 
 using namespace std;
 
-class H5Reader
-{
+class H5Reader {
+ protected:
+  string      m_fn;       // the file name
+  hid_t       m_h5file;   // the h5 file
 
-protected:
-	string 			m_fn; 			// the file name
-	hid_t 			m_h5file;		// the h5 file
-	
-public:
-	H5Reader();
+ public:
+  H5Reader();
 
-	virtual ~H5Reader();
+  virtual ~H5Reader();
 
-	// start the writer. fn is filename
-	virtual bool open(const char *fn);
+  // start the writer. fn is filename
+  virtual bool open(const char *fn);
 
-	// close log file
-	virtual bool close();
+  // close log file
+  virtual bool close();
 
-	// returns the name of the file we are writing to
-	virtual string filename();
+  // returns the name of the file we are writing to
+  virtual string filename();
 
-	string getUUID();
+  string getUUID();
+  string getVersion();
+  string getSessionDescription();
+  string getSessionStartTime();
 
-	string getVersion();
+  // virtual const char *name() = 0; // set in child class
 
-	string getSessionStartTime();
+  const char *name() {
+    return "H5 Broadband Reader v1.0";
+  }
 
-	//virtual const char *name() = 0; // set in child class
-
-	const char *name()
-	{
-		return "H5 Broadband Reader v1.0";
-	};
-
-protected:
-	string getScalarStringDataSet(const char *str);
-
+ protected:
+  string getScalarStringDataset(const char *str);
 };
 
-#endif
+#endif  // INCLUDE_H5READER_H_
