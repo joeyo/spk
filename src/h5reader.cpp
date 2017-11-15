@@ -56,6 +56,10 @@ string H5Reader::getVersion() {
   return getScalarStringDataset("/nwb_version");
 }
 
+string H5Reader::getSessionID() {
+  return getScalarStringDataset("/general/session_id");
+}
+
 string H5Reader::getSessionStartTime() {
   return getScalarStringDataset("/session_start_time");
 }

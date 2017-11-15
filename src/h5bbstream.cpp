@@ -1,8 +1,8 @@
-#include <uuid>
-#include <zmq>
+#include <uuid.h>
+#include <zmq.h>
+#include <basedir.h>
+#include <basedir_fs.h>
 
-#include <basedir>
-#include <basedir_fs>
 #include <csignal>  // for signal, SIGINT
 #include <ctime>
 
@@ -65,11 +65,13 @@ int main(int argc, char *argv[]) {
   std::string uuid = h5.getUUID();
   std::string t_start = h5.getSessionStartTime();
   std::string session_description = h5.getSessionDescription();
+  std::string session_id = h5.getSessionID();
 
   printf("NWB Version: %s\n", ver.c_str());
   printf("UUID: %s\n", uuid.c_str());
   printf("Session Start Time: %s\n", t_start.c_str());
   printf("Session Description: %s\n", session_description.c_str());
+  printf("Session ID: %s\n", session_id.c_str());
 
 /*
   xdgHandle xdg;

@@ -30,6 +30,7 @@ class H5Reader {
   string getUUID();
   string getVersion();
   string getSessionDescription();
+  string getSessionID();
   string getSessionStartTime();
 
   // virtual const char *name() = 0; // set in child class
@@ -40,6 +41,7 @@ class H5Reader {
 
  protected:
   string getScalarStringDataset(const char *str);
+
 };
 
 #endif  // INCLUDE_H5READER_H_
