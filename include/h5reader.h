@@ -33,6 +33,8 @@ class H5Reader {
   string getSessionID();
   string getSessionStartTime();
 
+  bool getInt32Scalar(const char *str, int32_t *x);
+
   // virtual const char *name() = 0; // set in child class
 
   const char *name() {

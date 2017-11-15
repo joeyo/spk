@@ -97,3 +97,49 @@ string H5Reader::getScalarStringDataset(const char *str) {
 
   return s;
 }
+
+bool H5Reader::getInt32Scalar(const char *str, int32_t *x) {
+
+  if (m_h5file < 0) {
+    return false;
+  }
+
+  hid_t dset = H5Dopen(m_h5file, str, H5P_DEFAULT);
+  if (dset < 0) {
+    return false;
+  }
+
+  hid_t dtype = H5Dget_type(dset);
+  if (dtype < 0) {
+    H5Dclose(dset);
+    return false;
+  }
+
+  if (H5T_INTEGER != H5Tget_class(dtype)) {
+    H5Tclose(dtype);
+    H5Dclose(dset);
+    return false;
+  }
+
+  hid_t dspace = H5Dget_space(dset);
+  if (dspace < 0) {
+    H5Tclose(dtype);
+    H5Dclose(dset);
+    return false;
+  }
+
+  if (H5S_SCALAR != H5Sget_simple_extent_type(dspace)) {
+    H5Sclose(dspace);
+    H5Tclose(dtype);
+    H5Dclose(dset);
+    return false;
+  }
+
+  H5Dread(dset, dtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, x);
+
+  H5Sclose(dspace);
+  H5Tclose(dtype);
+  H5Dclose(dset);
+
+  return true;
+}

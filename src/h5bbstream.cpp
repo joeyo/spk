@@ -73,6 +73,10 @@ int main(int argc, char *argv[]) {
   printf("Session Description: %s\n", session_description.c_str());
   printf("Session ID: %s\n", session_id.c_str());
 
+  int32_t nsamps;
+  h5.getInt32Scalar("/acquisition/timeseries/broadband/num_samples", &nsamps);
+  printf("broadband total samples %d\n", nsamps);
+
 /*
   xdgHandle xdg;
   xdgInitHandle(&xdg);
