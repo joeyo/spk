@@ -6,6 +6,8 @@ H5Dataset::H5Dataset() {
   dset = 0;
   dtype = 0;
   dspace = 0;
+  rank = -1;
+  dims = nullptr;
 }
 
 H5Dataset::~H5Dataset() {
@@ -35,10 +37,16 @@ bool H5Dataset::open(hid_t h5file, std::string dset_name) {
     return false;
   }
 
+  // check if this is a simple extent?
+  rank = H5Sget_simple_extent_ndims(dspace); //  check for error
+  dims = new int[rank];
+  H5Sget_simple_extent_dims(dspace, dims, nullptr); //  check for error
+
   return true;
 }
 
 void H5Dataset::close() {
+  delete[] dims;
   if (0 != dspace) {
     H5Sclose(dspace);
   }

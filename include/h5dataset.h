@@ -11,12 +11,15 @@ class H5Dataset {
   hid_t dtype;
   hid_t dspace;
 
- public:
   H5Dataset();
   virtual ~H5Dataset();
 
   bool open(hid_t h5file, std::string dset_name);
   void close();
+
+ protected:
+  int rank;
+  int *dims;
 
 };
 

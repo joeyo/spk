@@ -35,8 +35,9 @@ class H5Reader {
 
   bool getInt32Scalar(std::string str, int32_t *x);
 
-  bool openBroadbandData();
-  void closeBroadbandData();
+  bool openBroadband();
+  void closeBroadband();
+  bool getBroadbandBlock(size_t sample_offset);
 
   // virtual const char *name() = 0; // set in child class
 

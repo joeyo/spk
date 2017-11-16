@@ -107,28 +107,30 @@ bool H5Reader::getInt32Scalar(std::string str, int32_t *x) {
   return true;
 }
 
-bool H5Reader::openBroadbandData() {
-
+bool H5Reader::openBroadband() {
+  if (!broadband.open(m_h5file, "/acquisition/timeseries/broadband/data")) {
+    return false;
+  }
+  // should additionally check if it's INT_16LE
+  if (H5T_INTEGER != H5Tget_class(broadband.dtype)) {
+    broadband.close();
+    return false;
+  }
+  return true;
 }
 
+void H5Reader::closeBroadband() {
+  broadband.close();
+}
 
-bool H5Reader::openBroadbandData() {
-
-  H5Dataset dataset;
-  if (!dataset.open(m_h5file, "/acquisition/timeseries/broadband/data")) {
-    return false;
-  }
-
-  // should additionally check if it's INT_16LE
-  if (H5T_INTEGER != H5Tget_class(dataset.dtype)) {
-    return false;
-  }
-
-  int rank = H5Sget_simple_extent_ndims(dataset.dspace);
+  //int rank = H5Sget_simple_extent_ndims(dataset.dspace);
   //dims_total
   //status_n  = H5Sget_simple_extent_dims (dataspace, dims_out, NULL);
 
-  size_t foo = sample_offset + block_size; // bullshit
+  //size_t foo = sample_offset + block_size; // bullshit
 
-  return true;
-}
+  //return true;
+
+
+
+
