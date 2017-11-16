@@ -4,14 +4,14 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include "hdf5.h"
 
-using namespace std;
+#include "hdf5.h"
 
 class H5Reader {
  protected:
-  string      m_fn;       // the file name
-  hid_t       m_h5file;   // the h5 file
+  std::string m_fn;  // the file name
+  hid_t m_h5file;  // the h5 file
+  H5Dataset broadband;
 
  public:
   H5Reader();
@@ -19,21 +19,24 @@ class H5Reader {
   virtual ~H5Reader();
 
   // start the writer. fn is filename
-  virtual bool open(const char *fn);
+  virtual bool open(std::string fn);
 
   // close log file
   virtual bool close();
 
   // returns the name of the file we are writing to
-  virtual string filename();
+  virtual std::string filename();
 
-  string getUUID();
-  string getVersion();
-  string getSessionDescription();
-  string getSessionID();
-  string getSessionStartTime();
+  std::string getUUID();
+  std::string getVersion();
+  std::string getSessionDescription();
+  std::string getSessionID();
+  std::string getSessionStartTime();
 
-  bool getInt32Scalar(const char *str, int32_t *x);
+  bool getInt32Scalar(std::string str, int32_t *x);
+
+  bool openBroadbandData();
+  void closeBroadbandData();
 
   // virtual const char *name() = 0; // set in child class
 
@@ -42,7 +45,7 @@ class H5Reader {
   }
 
  protected:
-  string getScalarStringDataset(const char *str);
+  std::string getScalarStringDataset(std::string str);
 
 };
 

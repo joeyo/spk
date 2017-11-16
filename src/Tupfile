@@ -36,6 +36,7 @@ h5analogwriter.cpp \
 h5eventwriter.cpp \
 h5bbsave.cpp \
 h5evsave.cpp \
+h5dataset.cpp \
 h5reader.cpp \
 h5bbstream.cpp
 : foreach $(OBJS) |> !cpp |> %B.o

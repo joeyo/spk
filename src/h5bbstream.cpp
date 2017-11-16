@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   s_catch_signals();
 
   H5Reader h5;
-  h5.open(fn.c_str());
+  h5.open(fn);
 
   std::string ver = h5.getVersion();
   std::string uuid = h5.getUUID();

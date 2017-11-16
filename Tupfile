@@ -45,6 +45,7 @@ src/h5eventwriter.o |> !ld |> bin/h5evsave
 lib/util.o \
 lib/lconf.o \
 lib/gettime.o \
+src/h5dataset.o \
 src/h5reader.o |> !ld |> bin/h5bbstream
 
 PKG_LIBS  = gtk+-2.0 gl glu gtkglext-1.0
