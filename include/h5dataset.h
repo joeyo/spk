@@ -19,7 +19,18 @@ class H5Dataset {
 
  protected:
   int rank;
-  int *dims;
+  hsize_t *dims;
+
+};
+
+class H5Broadband : public H5Dataset {
+ public:
+
+  H5Broadband();
+  virtual ~H5Broadband();
+
+  bool open(hid_t h5file);
+  bool getBlock(size_t sample_offset, size_t num_samples, double *block);
 
 };
 

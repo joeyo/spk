@@ -7,11 +7,13 @@
 
 #include "hdf5.h"
 
+#include "h5dataset.h"
+
 class H5Reader {
  protected:
   std::string m_fn;  // the file name
   hid_t m_h5file;  // the h5 file
-  H5Dataset broadband;
+  H5Broadband broadband;
 
  public:
   H5Reader();
@@ -35,9 +37,9 @@ class H5Reader {
 
   bool getInt32Scalar(std::string str, int32_t *x);
 
-  bool openBroadband();
-  void closeBroadband();
-  bool getBroadbandBlock(size_t sample_offset);
+  bool getBroadbandBlock(
+    size_t sample_offset, size_t num_samples, double *block);
+
 
   // virtual const char *name() = 0; // set in child class
 

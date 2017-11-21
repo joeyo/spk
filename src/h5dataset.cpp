@@ -39,7 +39,7 @@ bool H5Dataset::open(hid_t h5file, std::string dset_name) {
 
   // check if this is a simple extent?
   rank = H5Sget_simple_extent_ndims(dspace); //  check for error
-  dims = new int[rank];
+  dims = new hsize_t[rank];
   H5Sget_simple_extent_dims(dspace, dims, nullptr); //  check for error
 
   return true;
@@ -56,4 +56,24 @@ void H5Dataset::close() {
   if (0 != dset) {
     H5Dclose(dset);
   }
+}
+
+H5Broadband::H5Broadband() {}
+
+H5Broadband::~H5Broadband() {}
+
+bool H5Broadband::open(hid_t h5file) {
+  if (!H5Dataset::open(h5file, "/acquisition/timeseries/broadband/data")) {
+    return false;
+  }
+  // should additionally check if it's INT_16LE
+  if (H5T_INTEGER != H5Tget_class(dtype)) {
+    H5Dataset::close();
+    return false;
+  }
+  return true;
+}
+
+bool H5Broadband::getBlock(size_t sample_offset, size_t num_samples, double *block) {
+  return true;
 }

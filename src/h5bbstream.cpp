@@ -77,6 +77,9 @@ int main(int argc, char *argv[]) {
   h5.getInt32Scalar("/acquisition/timeseries/broadband/num_samples", &nsamps);
   printf("broadband total samples %d\n", nsamps);
 
+  double x;
+  h5.getBroadbandBlock(0, 12, &x);
+
 /*
   xdgHandle xdg;
   xdgInitHandle(&xdg);
